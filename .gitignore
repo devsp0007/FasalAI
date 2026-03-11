@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.env
+venv/
+env/
+
+# Node
+node_modules/
+apps/web/dist/
+.cache/
+
+# ML Models (large binaries)
+*.pkl
+
+# Data
+datasets/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Installers / binaries
+*.exe
+*.msix
+*.msi
+
+# Logs
+*.log
