@@ -144,4 +144,4 @@ print("\n Model 1 complete!\n")
 top3  = sorted(zip(bundle["class_names"], proba), key=lambda x: x[1], reverse=True)[:3]
 for crop, conf in top3:
     print(f"  {crop}: {conf*100:.1f}%")
-"""
+
