@@ -13,8 +13,8 @@ from sklearn.metrics import (
 )
 from sklearn.pipeline import Pipeline
 
-DATA_PATH   = r"C:\Users\ankur\OneDrive\Documents\projects\SIH25010\datasets\Crop_recommendation.csv"
-OUTPUT_DIR  = r"C:\Users\ankur\OneDrive\Documents\projects\SIH25010\latest_model"
+DATA_PATH   = r"C:\Users\\Crop_recommendation.csv"
+OUTPUT_DIR  = r"C:\Users\SIH25010\latest_model"
 MODEL_FILE  = os.path.join(OUTPUT_DIR, "crop_recommendation_rf.pkl")
 META_FILE   = os.path.join(OUTPUT_DIR, "crop_recommendation_rf_meta.json")
 RANDOM_SEED = 42
