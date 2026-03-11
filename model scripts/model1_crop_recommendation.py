@@ -21,7 +21,7 @@ RANDOM_SEED = 42
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ── 1. Load & Inspect ──────────────────────────────────────
+
 print("=" * 60)
 print("  CROP RECOMMENDATION — RANDOM FOREST")
 print("=" * 60)
@@ -32,26 +32,26 @@ print(f"   Columns       : {list(df.columns)}")
 print(f"   Missing values: {df.isnull().sum().sum()}")
 print(f"   Unique crops  : {df['label'].nunique()} → {sorted(df['label'].unique())}")
 
-# ── 2. Feature / Target Split ──────────────────────────────
+
 FEATURE_COLS = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
 TARGET_COL   = "label"
 
 X = df[FEATURE_COLS].values
 y = df[TARGET_COL].values
 
-# Encode string labels → integers
+
 le = LabelEncoder()
 y_enc = le.fit_transform(y)
 class_names = list(le.classes_)
 print(f"\n   Class mapping : {dict(zip(range(len(class_names)), class_names))}")
 
-# ── 3. Train / Test Split ──────────────────────────────────
+
 X_train, X_test, y_train, y_test = train_test_split(
     X, y_enc, test_size=0.20, random_state=RANDOM_SEED, stratify=y_enc
 )
 print(f"\n📊 Train size : {X_train.shape[0]}  |  Test size : {X_test.shape[0]}")
 
-# ── 4. Build Pipeline (Scaler + RF) ───────────────────────
+
 pipeline = Pipeline([
     ("scaler", StandardScaler()),
     ("clf", RandomForestClassifier(
@@ -66,15 +66,15 @@ pipeline = Pipeline([
     ))
 ])
 
-# ── 5. Cross-Validation ────────────────────────────────────
+
 print("\n🔄 Running 5-fold cross-validation …")
 cv_scores = cross_val_score(pipeline, X_train, y_train, cv=5, scoring="accuracy", n_jobs=-1)
 print(f"   CV Accuracy : {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
-# ── 6. Train Final Model ───────────────────────────────────
+
 pipeline.fit(X_train, y_train)
 
-# ── 7. Evaluate ────────────────────────────────────────────
+
 y_pred = pipeline.predict(X_test)
 acc    = accuracy_score(y_test, y_pred)
 
@@ -82,7 +82,7 @@ print(f"\n✅ Test Accuracy : {acc:.4f} ({acc*100:.2f}%)")
 print("\n📋 Classification Report:")
 print(classification_report(y_test, y_pred, target_names=class_names))
 
-# Feature importance (from the RF inside the pipeline)
+
 rf_model     = pipeline.named_steps["clf"]
 importances  = rf_model.feature_importances_
 feat_imp     = dict(zip(FEATURE_COLS, importances.round(4).tolist()))
@@ -92,8 +92,7 @@ for feat, imp in feat_imp_sorted.items():
     bar = "█" * int(imp * 40)
     print(f"   {feat:<15} {imp:.4f}  {bar}")
 
-# ── 8. Export Model + Metadata ─────────────────────────────
-# Bundle pipeline AND label encoder together for easy reload
+
 bundle = {
     "pipeline"      : pipeline,
     "label_encoder" : le,
@@ -101,7 +100,7 @@ bundle = {
     "class_names"   : class_names,
 }
 joblib.dump(bundle, MODEL_FILE, compress=3)
-print(f"\n💾 Model saved → {MODEL_FILE}")
+print(f"\n Model saved → {MODEL_FILE}")
 
 meta = {
     "model_type"        : "RandomForestClassifier",
@@ -122,8 +121,8 @@ with open(META_FILE, "w") as f:
     json.dump(meta, f, indent=2)
 print(f"📄 Metadata saved → {META_FILE}")
 
-# ── 9. Quick Inference Demo ────────────────────────────────
-print("\n🌾 Demo Prediction:")
+
+print("\n Demo Prediction:")
 sample = pd.DataFrame([{
     "N": 90, "P": 42, "K": 43,
     "temperature": 20.8, "humidity": 82.0,
@@ -139,32 +138,9 @@ print(f"   → Top-3 with confidence:")
 for i in top3_idx:
     print(f"      {class_names[i]:<18} {pred_proba[i]*100:.1f}%")
 
-print("\n✅ Model 1 complete!\n")
+print("\n Model 1 complete!\n")
 
 
-# ══════════════════════════════════════════════════════════
-#  HOW TO LOAD & USE IN ANOTHER PROJECT
-# ══════════════════════════════════════════════════════════
-"""
-import joblib, numpy as np
-
-bundle   = joblib.load("crop_recommendation_rf.pkl")
-pipeline = bundle["pipeline"]
-le       = bundle["label_encoder"]
-features = bundle["feature_cols"]   # ['N','P','K','temperature','humidity','ph','rainfall']
-
-# Single prediction
-import pandas as pd
-sample = pd.DataFrame([{
-    "N": 80, "P": 40, "K": 40,
-    "temperature": 25.0, "humidity": 75.0,
-    "ph": 6.8, "rainfall": 180.0
-}])
-pred_label = le.inverse_transform(pipeline.predict(sample))[0]
-print(f"Recommended crop: {pred_label}")
-
-# With confidence scores
-proba = pipeline.predict_proba(sample)[0]
 top3  = sorted(zip(bundle["class_names"], proba), key=lambda x: x[1], reverse=True)[:3]
 for crop, conf in top3:
     print(f"  {crop}: {conf*100:.1f}%")
