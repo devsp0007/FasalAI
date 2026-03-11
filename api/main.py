@@ -16,12 +16,12 @@ from routes import router
 async def lifespan(app: FastAPI):
     """Load ML models before the app starts serving requests."""
     print("=" * 60)
-    print("  [*] Smart Crop Advisory -- Starting Server")
+    print("  🌾 Smart Crop Advisory — Starting Server")
     print("=" * 60)
     load_models()
     print("=" * 60)
     yield
-    print("[*] Shutting down...")
+    print("👋 Shutting down...")
 
 
 app = FastAPI(

@@ -32,40 +32,40 @@ def load_models():
     yield_path = MODEL_DIR / "crop_yield_xgboost.pkl"
     price_path = MODEL_DIR / "crop_price_xgboost.pkl"
 
-    print(f"[+] Loading models from: {MODEL_DIR}")
+    print(f"📂 Loading models from: {MODEL_DIR}")
 
     # Load Crop Recommendation model
     try:
         if crop_rec_path.exists():
             _crop_rec_bundle = joblib.load(crop_rec_path)
-            print(f"  [OK] Crop Recommendation model loaded ({len(_crop_rec_bundle['class_names'])} crops)")
+            print(f"  ✅ Crop Recommendation model loaded ({len(_crop_rec_bundle['class_names'])} crops)")
         else:
-            print(f"  [WARN] Crop Recommendation model not found at {crop_rec_path}")
+            print(f"  ⚠️  Crop Recommendation model not found at {crop_rec_path}")
     except Exception as e:
-        print(f"  [ERR] Failed to load Crop Recommendation model: {e}")
+        print(f"  ❌ Failed to load Crop Recommendation model: {e}")
 
     # Load Yield Prediction model
     try:
         if yield_path.exists():
             _yield_bundle = joblib.load(yield_path)
-            print(f"  [OK] Yield Prediction model loaded")
+            print(f"  ✅ Yield Prediction model loaded")
         else:
-            print(f"  [WARN] Yield Prediction model not found at {yield_path}")
+            print(f"  ⚠️  Yield Prediction model not found at {yield_path}")
     except Exception as e:
-        print(f"  [ERR] Failed to load Yield Prediction model: {e}")
+        print(f"  ❌ Failed to load Yield Prediction model: {e}")
 
     # Load Price Prediction model
     try:
         if price_path.exists():
             _price_bundle = joblib.load(price_path)
-            print(f"  [OK] Price Prediction model loaded")
+            print(f"  ✅ Price Prediction model loaded")
         else:
-            print(f"  [WARN] Price Prediction model not found at {price_path}")
+            print(f"  ⚠️  Price Prediction model not found at {price_path}")
     except Exception as e:
-        print(f"  [WARN] Price model failed to load (version mismatch, using mock): {e}")
+        print(f"  ⚠️  Price model failed to load (version mismatch, using mock): {e}")
         _price_bundle = None
 
-    print("[OK] Model loading complete!")
+    print("🚀 Model loading complete!")
 
 
 def get_crop_list():
