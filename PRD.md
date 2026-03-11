@@ -2,7 +2,7 @@
 ## Crop Rotation Planner UI
 
 **Version:** 1.0  
-**Author:** (Your Team)  
+**Author:** ANKUR PRATAP SINGH
 **Reference Design:** [Crop Rotation Planner — Dribbble (Tanguy Desurmont)](https://dribbble.com/shots/24651371-Crop-Rotation-Planner)
 
 ---
