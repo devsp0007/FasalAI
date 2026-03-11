@@ -1,14 +1,4 @@
-"""
-==============================================================
-  Model 2: Crop Price Prediction — Gradient Boosting
-==============================================================
-  Dataset       : agmarknet_india_historical_prices_2024_2025.csv
-  Input features: Commodity, State, District, Market, Variety,
-                  Grade, month, year, min_price, max_price
-  Target        : Modal Price (Rs./Quintal)
-  Algorithm     : GradientBoostingRegressor (sklearn)
-==============================================================
-"""
+
 
 import os
 import json
@@ -23,16 +13,16 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 
-# ── 0. Config ──────────────────────────────────────────────
-DATA_PATH   = r"C:\Users\ankur\OneDrive\Documents\projects\SIH25010\datasets\agmarknet_india_historical_prices_2024_2025.csv"
-OUTPUT_DIR  = r"C:\Users\ankur\OneDrive\Documents\projects\SIH25010\latest_model"
+
+DATA_PATH   = r"C:\Users\agmarknet_india_historical_prices_2024_2025.csv"
+OUTPUT_DIR  = r"C:\Users\SIH25010\latest_model"
 MODEL_FILE  = os.path.join(OUTPUT_DIR, "crop_price_xgboost.pkl")
 META_FILE   = os.path.join(OUTPUT_DIR, "crop_price_xgboost_meta.json")
 RANDOM_SEED = 42
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ── 1. Load & Inspect ──────────────────────────────────────
+
 print("=" * 60)
 print("  CROP PRICE PREDICTION — GRADIENT BOOSTING")
 print("=" * 60)
@@ -42,7 +32,6 @@ print(f"\n📂 Dataset shape  : {df.shape}")
 print(f"   Columns        : {list(df.columns)}")
 print(f"   Missing values : {df.isnull().sum().sum()}")
 
-# ── 2. Rename columns to snake_case for easier handling ────
 df = df.rename(columns={
     "District Name"             : "district",
     "Market Name"               : "market",
@@ -56,24 +45,22 @@ df = df.rename(columns={
     "State"                     : "state",
 })
 
-# ── 3. Feature Engineering ────────────────────────────────
-# Parse price_date → month, year (seasonal signals)
 df["price_date"] = pd.to_datetime(df["price_date"], dayfirst=True, errors="coerce")
 df["month"] = df["price_date"].dt.month.fillna(1).astype(int)
 df["year"]  = df["price_date"].dt.year.fillna(2024).astype(int)
 
-# Price spread (signal: high spread = volatile market)
+
 df["price_spread"] = df["max_price"] - df["min_price"]
 
 # Drop rows with missing target
 df = df.dropna(subset=["modal_price"])
 print(f"   After cleaning  : {df.shape[0]} rows")
 
-# Target stats
+
 print(f"\n📊 Target (modal_price) stats:")
 print(df["modal_price"].describe().round(2).to_string())
 
-# ── 4. Define Features ────────────────────────────────────
+
 CAT_FEATURES = ["state", "district", "market", "commodity", "variety", "grade"]
 NUM_FEATURES = ["min_price", "max_price", "price_spread", "month", "year"]
 ALL_FEATURES = CAT_FEATURES + NUM_FEATURES
@@ -82,11 +69,11 @@ TARGET_COL   = "modal_price"
 X = df[ALL_FEATURES].copy()
 y = df[TARGET_COL].values
 
-# Fill missing categoricals
+
 for col in CAT_FEATURES:
     X[col] = X[col].fillna("Unknown")
 
-# Fill missing numericals
+
 for col in NUM_FEATURES:
     X[col] = X[col].fillna(0)
 
@@ -94,8 +81,7 @@ print(f"\n   Features used  : {ALL_FEATURES}")
 print(f"   Unique commodities ({df['commodity'].nunique()}): {sorted(df['commodity'].unique())[:10]} ...")
 print(f"   Unique states ({df['state'].nunique()}): {sorted(df['state'].unique())}")
 
-# ── 5. Sample dataset for faster training ─────────────────
-# The dataset has 1M+ rows; we sample for tractable training time
+
 SAMPLE_SIZE = 100_000
 if len(X) > SAMPLE_SIZE:
     print(f"\n⚡ Sampling {SAMPLE_SIZE:,} rows from {len(X):,} for faster training …")
@@ -104,13 +90,13 @@ if len(X) > SAMPLE_SIZE:
     X = X.iloc[sample_idx].reset_index(drop=True)
     y = y[sample_idx]
 
-# ── 6. Train / Test Split ─────────────────────────────────
+
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.20, random_state=RANDOM_SEED
 )
 print(f"\n📊 Train size : {X_train.shape[0]}  |  Test size : {X_test.shape[0]}")
 
-# ── 7. Preprocessing Pipeline ─────────────────────────────
+
 cat_transformer = OrdinalEncoder(
     handle_unknown="use_encoded_value",
     unknown_value=-1
@@ -122,7 +108,7 @@ preprocessor = ColumnTransformer([
     ("num", num_transformer, NUM_FEATURES),
 ])
 
-# ── 8. Full Pipeline ──────────────────────────────────────
+
 pipeline = Pipeline([
     ("preprocessor", preprocessor),
     ("model", GradientBoostingRegressor(
@@ -137,7 +123,7 @@ pipeline = Pipeline([
     ))
 ])
 
-# ── 9. Cross-Validation ───────────────────────────────────
+
 print("\n🔄 Running 3-fold cross-validation (R²) …")
 cv_scores = cross_val_score(
     pipeline, X_train, y_train, cv=3,
@@ -145,11 +131,10 @@ cv_scores = cross_val_score(
 )
 print(f"   CV R² : {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
-# ── 10. Train Final Model ─────────────────────────────────
 print("\n🏋️ Training final model …")
 pipeline.fit(X_train, y_train)
 
-# ── 11. Evaluate ──────────────────────────────────────────
+
 y_pred = pipeline.predict(X_test)
 mae  = mean_absolute_error(y_test, y_pred)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
@@ -162,7 +147,7 @@ print(f"   RMSE  : ₹{rmse:,.2f}")
 print(f"   R²    : {r2:.4f}")
 print(f"   MAPE  : {mape:.2f}%")
 
-# Feature importance
+
 gb_model    = pipeline.named_steps["model"]
 importances = gb_model.feature_importances_
 feat_imp    = dict(zip(ALL_FEATURES, importances.round(4).tolist()))
@@ -172,7 +157,7 @@ for feat, imp in feat_imp_sorted.items():
     bar = "█" * int(imp * 50)
     print(f"   {feat:<18} {imp:.4f}  {bar}")
 
-# ── 12. Export Model + Metadata ───────────────────────────
+
 bundle = {
     "pipeline"       : pipeline,
     "feature_cols"   : ALL_FEATURES,
@@ -207,7 +192,6 @@ with open(META_FILE, "w") as f:
     json.dump(meta, f, indent=2)
 print(f"📄 Metadata saved → {META_FILE}")
 
-# ── 13. Demo Prediction ───────────────────────────────────
 print("\n🌾 Demo Prediction:")
 sample = pd.DataFrame([{
     "state"       : "Uttar Pradesh",
@@ -229,31 +213,8 @@ print(f"   → Predicted modal price: ₹{pred_price:,.0f}")
 print("\n✅ Model 2 complete!\n")
 
 
-# ══════════════════════════════════════════════════════════
-#  HOW TO LOAD & USE IN ANOTHER PROJECT
-# ══════════════════════════════════════════════════════════
-"""
-import joblib
-import pandas as pd
 
-bundle   = joblib.load("crop_price_xgboost.pkl")
-pipeline = bundle["pipeline"]
-features = bundle["feature_cols"]
-
-sample = pd.DataFrame([{
-    "state"        : "Karnataka",
-    "district"     : "Bangalore",
-    "market"       : "Yeshwanthpur",
-    "commodity"    : "Tomato",
-    "variety"      : "Local",
-    "grade"        : "FAQ",
-    "min_price"    : 1000,
-    "max_price"    : 2000,
-    "price_spread" : 1000,   # max_price - min_price
-    "month"        : 6,
-    "year"         : 2025,
 }])
 
 predicted_price = pipeline.predict(sample)[0]
 print(f"Predicted modal price: ₹{predicted_price:,.0f}")
-"""
