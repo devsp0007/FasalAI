@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getWeather, getMarketPrices, healthCheck } from '../services/api'
+import { useLanguage } from '../contexts/LanguageContext'
 
 export default function Dashboard() {
   const [weather, setWeather] = useState(null)
   const [prices, setPrices] = useState(null)
   const [status, setStatus] = useState(null)
+  const { t } = useLanguage()
 
   useEffect(() => {
     healthCheck().then(setStatus).catch(() => setStatus({ status: 'offline' }))
@@ -21,18 +23,17 @@ export default function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--sp-4)' }}>
             <div>
               <h1 style={{ color: 'white', fontSize: '1.5rem', marginBottom: 'var(--sp-2)' }}>
-                🌾 Namaste, Farmer!
+                {t('dash_welcome')}
               </h1>
               <p style={{ opacity: 0.85, maxWidth: 500, fontSize: '0.9rem' }}>
-                Welcome to SmartCrop Advisory — your AI-powered assistant for better crop decisions.
-                Get personalized recommendations, track market prices, and plan rotations.
+                {t('dash_welcomeText')}
               </p>
               <div style={{ marginTop: 'var(--sp-4)', display: 'flex', gap: 'var(--sp-3)' }}>
                 <Link to="/recommend" className="btn" style={{ background: 'white', color: '#1B5E20', fontWeight: 700 }}>
-                  🌱 Get Recommendation
+                  {t('dash_getRecommendation')}
                 </Link>
                 <Link to="/market" className="btn" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}>
-                  📈 View Prices
+                  {t('dash_viewPrices')}
                 </Link>
               </div>
             </div>
@@ -46,33 +47,33 @@ export default function Dashboard() {
         <div className="stat-card stagger-1">
           <div className="stat-icon green">🌱</div>
           <div className="stat-info">
-            <div className="stat-label">ML Models</div>
+            <div className="stat-label">{t('dash_mlModels')}</div>
             <div className="stat-value">3</div>
             <div className="stat-change up">
-              {status?.status === 'healthy' ? '✅ All Online' : '⏳ Loading...'}
+              {status?.status === 'healthy' ? t('dash_allOnline') : t('dash_loading')}
             </div>
           </div>
         </div>
         <div className="stat-card stagger-2">
           <div className="stat-icon amber">🌾</div>
           <div className="stat-info">
-            <div className="stat-label">Crops Covered</div>
+            <div className="stat-label">{t('dash_cropsCovered')}</div>
             <div className="stat-value">22</div>
-            <div className="stat-change up">RF Model Ready</div>
+            <div className="stat-change up">{t('dash_rfModelReady')}</div>
           </div>
         </div>
         <div className="stat-card stagger-3">
           <div className="stat-icon blue">📊</div>
           <div className="stat-info">
-            <div className="stat-label">Model Accuracy</div>
+            <div className="stat-label">{t('dash_modelAccuracy')}</div>
             <div className="stat-value">99.5%</div>
-            <div className="stat-change up">↑ RF Classifier</div>
+            <div className="stat-change up">{t('dash_rfClassifier')}</div>
           </div>
         </div>
         <div className="stat-card stagger-4">
           <div className="stat-icon earth">📈</div>
           <div className="stat-info">
-            <div className="stat-label">Latest Price</div>
+            <div className="stat-label">{t('dash_latestPrice')}</div>
             <div className="stat-value">₹{prices?.latest_price?.toLocaleString() || '...'}</div>
             <div className={`stat-change ${prices?.trend === 'rising' ? 'up' : 'down'}`}>
               {prices ? `${prices.trend_pct > 0 ? '↑' : '↓'} ${Math.abs(prices.trend_pct)}% ${prices.trend}` : '...'}
@@ -85,7 +86,7 @@ export default function Dashboard() {
         {/* Weather Widget */}
         <div className="card animate-fade-in-up stagger-2">
           <div className="card-header">
-            <h3>🌤️ 7-Day Weather Forecast</h3>
+            <h3>{t('dash_weatherForecast')}</h3>
             <span className="badge badge-blue">Varanasi</span>
           </div>
           <div className="card-body">
@@ -103,7 +104,7 @@ export default function Dashboard() {
             ) : (
               <div className="loading-container" style={{ padding: 'var(--sp-8)' }}>
                 <div className="spinner"></div>
-                <span>Loading weather...</span>
+                <span>{t('dash_loadingWeather')}</span>
               </div>
             )}
           </div>
@@ -112,24 +113,24 @@ export default function Dashboard() {
         {/* Quick Actions */}
         <div className="card animate-fade-in-up stagger-3">
           <div className="card-header">
-            <h3>⚡ Quick Actions</h3>
+            <h3>{t('dash_quickActions')}</h3>
           </div>
           <div className="card-body">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
               <Link to="/recommend" className="btn btn-primary btn-lg" style={{ justifyContent: 'flex-start' }}>
-                🌱 Get Crop Recommendation
+                {t('dash_getCropReco')}
               </Link>
               <Link to="/yield" className="btn btn-secondary btn-lg" style={{ justifyContent: 'flex-start' }}>
-                🌾 Predict Crop Yield
+                {t('dash_predictYield')}
               </Link>
               <Link to="/market" className="btn btn-secondary btn-lg" style={{ justifyContent: 'flex-start' }}>
-                📈 Check Market Prices
+                {t('dash_checkPrices')}
               </Link>
               <Link to="/planner" className="btn btn-secondary btn-lg" style={{ justifyContent: 'flex-start' }}>
-                📅 Plan Crop Rotation
+                {t('dash_planRotation')}
               </Link>
               <Link to="/fields" className="btn btn-secondary btn-lg" style={{ justifyContent: 'flex-start' }}>
-                🗺️ Manage My Fields
+                {t('dash_manageFields')}
               </Link>
             </div>
           </div>
@@ -139,25 +140,25 @@ export default function Dashboard() {
       {/* Features summary */}
       <div className="card animate-fade-in-up stagger-4">
         <div className="card-header">
-          <h3>🤖 AI-Powered Features</h3>
+          <h3>{t('dash_aiFeatures')}</h3>
           <span className="badge badge-green">SIH 2025</span>
         </div>
         <div className="card-body">
           <div className="grid-3">
             <div style={{ textAlign: 'center', padding: 'var(--sp-4)' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 'var(--sp-3)' }}>🧪</div>
-              <h4 style={{ marginBottom: 'var(--sp-2)' }}>Soil Analysis</h4>
-              <p className="text-sm text-secondary">Enter N, P, K, pH values to get AI-powered crop recommendations matching your soil conditions.</p>
+              <h4 style={{ marginBottom: 'var(--sp-2)' }}>{t('dash_soilAnalysis')}</h4>
+              <p className="text-sm text-secondary">{t('dash_soilAnalysisDesc')}</p>
             </div>
             <div style={{ textAlign: 'center', padding: 'var(--sp-4)' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 'var(--sp-3)' }}>📊</div>
-              <h4 style={{ marginBottom: 'var(--sp-2)' }}>Yield Prediction</h4>
-              <p className="text-sm text-secondary">Predict expected crop yield using XGBoost model trained on India's agriculture production data.</p>
+              <h4 style={{ marginBottom: 'var(--sp-2)' }}>{t('dash_yieldPrediction')}</h4>
+              <p className="text-sm text-secondary">{t('dash_yieldPredictionDesc')}</p>
             </div>
             <div style={{ textAlign: 'center', padding: 'var(--sp-4)' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 'var(--sp-3)' }}>💰</div>
-              <h4 style={{ marginBottom: 'var(--sp-2)' }}>Price Forecasting</h4>
-              <p className="text-sm text-secondary">Get market price predictions to optimize your sell decisions at local mandis.</p>
+              <h4 style={{ marginBottom: 'var(--sp-2)' }}>{t('dash_priceForecasting')}</h4>
+              <p className="text-sm text-secondary">{t('dash_priceForecastingDesc')}</p>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const CROP_COLORS = {
@@ -30,13 +31,14 @@ const DEMO_ROTATIONS = [
 
 export default function Planner() {
   const [year] = useState(2026)
+  const { t } = useLanguage()
 
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-6)' }}>
         <div>
-          <h2>Crop Rotation Planner</h2>
-          <p className="text-sm text-muted">Plan and visualize your crop rotations across plots for {year}</p>
+          <h2>{t('planner_title')}</h2>
+          <p className="text-sm text-muted">{t('planner_description')} {year}</p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
           <button className="btn btn-secondary btn-sm">⬅ {year - 1}</button>
@@ -132,12 +134,12 @@ export default function Planner() {
         <div className="card-body" style={{ display: 'flex', gap: 'var(--sp-4)', alignItems: 'flex-start' }}>
           <div style={{ fontSize: '1.5rem' }}>💡</div>
           <div>
-            <h4>Rotation Tips</h4>
+            <h4>{t('planner_rotationTips')}</h4>
             <ul style={{ marginTop: 'var(--sp-2)', fontSize: '0.85rem', color: 'var(--text-secondary)', paddingLeft: 'var(--sp-5)' }}>
-              <li>Rotate cereals with legumes to restore soil nitrogen naturally</li>
-              <li>Avoid planting the same crop family in consecutive seasons</li>
-              <li>Include a fallow period to improve soil health</li>
-              <li>Use the Crop Advisory tool to find optimal crops for each season</li>
+              <li>{t('planner_tip1')}</li>
+              <li>{t('planner_tip2')}</li>
+              <li>{t('planner_tip3')}</li>
+              <li>{t('planner_tip4')}</li>
             </ul>
           </div>
         </div>

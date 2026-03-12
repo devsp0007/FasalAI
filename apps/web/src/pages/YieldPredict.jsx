@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { predictYield } from '../services/api'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const STATES = ['Andhra Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Gujarat', 'Haryana', 'Himachal Pradesh',
   'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya',
@@ -19,6 +20,7 @@ export default function YieldPredict() {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const { t } = useLanguage()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -35,32 +37,32 @@ export default function YieldPredict() {
       <div className="grid-2" style={{ gridTemplateColumns: '1fr 1fr' }}>
         <div className="card">
           <div className="card-header">
-            <h3>🌾 Yield Prediction Input</h3>
+            <h3>{t('yield_inputTitle')}</h3>
             <span className="badge badge-blue">XGBoost</span>
           </div>
           <div className="card-body">
             <form onSubmit={handleSubmit}>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">State</label>
+                  <label className="form-label">{t('yield_state')}</label>
                   <select className="form-select" value={form.state} onChange={e => setForm(f => ({...f, state: e.target.value}))}>
                     {STATES.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">District</label>
+                  <label className="form-label">{t('yield_district')}</label>
                   <input className="form-input" value={form.district} onChange={e => setForm(f => ({...f, district: e.target.value}))} placeholder="e.g. LUDHIANA" />
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Crop</label>
+                  <label className="form-label">{t('yield_crop')}</label>
                   <select className="form-select" value={form.crop} onChange={e => setForm(f => ({...f, crop: e.target.value}))}>
                     {CROPS.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Season</label>
+                  <label className="form-label">{t('yield_season')}</label>
                   <select className="form-select" value={form.season} onChange={e => setForm(f => ({...f, season: e.target.value}))}>
                     {SEASONS.map(s => <option key={s}>{s}</option>)}
                   </select>
@@ -68,16 +70,16 @@ export default function YieldPredict() {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Area (Hectares)</label>
+                  <label className="form-label">{t('yield_area')}</label>
                   <input className="form-input" type="number" value={form.area_ha} onChange={e => setForm(f => ({...f, area_ha: +e.target.value}))} step="0.1" min="0.1" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Year</label>
+                  <label className="form-label">{t('yield_year')}</label>
                   <input className="form-input" type="number" value={form.year} onChange={e => setForm(f => ({...f, year: +e.target.value}))} min="2000" max="2030" />
                 </div>
               </div>
               <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
-                {loading ? '⏳ Predicting...' : '🌾 Predict Yield'}
+                {loading ? t('yield_predicting') : t('yield_predictYield')}
               </button>
             </form>
           </div>
@@ -89,8 +91,8 @@ export default function YieldPredict() {
           {!result && !loading && (
             <div className="empty-state">
               <div className="empty-icon">🌾</div>
-              <h3>Predict Your Crop Yield</h3>
-              <p className="text-secondary">Select your state, crop, and season to get an AI-powered yield estimate.</p>
+              <h3>{t('yield_emptyTitle')}</h3>
+              <p className="text-secondary">{t('yield_emptyDesc')}</p>
             </div>
           )}
 

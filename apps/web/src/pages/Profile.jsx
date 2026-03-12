@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useLanguage } from '../contexts/LanguageContext'
 
 export default function Profile() {
+  const { t } = useLanguage()
   const [profile, setProfile] = useState({
     name: 'Ramesh Kumar',
     phone: '+91 98765 43210',
@@ -21,7 +23,7 @@ export default function Profile() {
         {/* Profile Info */}
         <div className="card">
           <div className="card-header">
-            <h3>👤 Profile Information</h3>
+            <h3>{t('profile_title')}</h3>
             <span className={`badge badge-green`}>{profile.role}</span>
           </div>
           <div className="card-body">
@@ -37,25 +39,25 @@ export default function Profile() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Full Name</label>
+              <label className="form-label">{t('profile_fullName')}</label>
               <input className="form-input" value={profile.name} onChange={e => setProfile(p => ({...p, name: e.target.value}))} />
             </div>
             <div className="form-group">
-              <label className="form-label">Phone Number</label>
+              <label className="form-label">{t('profile_phone')}</label>
               <input className="form-input" value={profile.phone} disabled />
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">District</label>
+                <label className="form-label">{t('profile_district')}</label>
                 <input className="form-input" value={profile.district} onChange={e => setProfile(p => ({...p, district: e.target.value}))} />
               </div>
               <div className="form-group">
-                <label className="form-label">State</label>
+                <label className="form-label">{t('profile_state')}</label>
                 <input className="form-input" value={profile.state} onChange={e => setProfile(p => ({...p, state: e.target.value}))} />
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label">Language</label>
+              <label className="form-label">{t('profile_language')}</label>
               <select className="form-select" value={profile.language} onChange={e => setProfile(p => ({...p, language: e.target.value}))}>
                 <option value="en">English</option>
                 <option value="hi">हिंदी (Hindi)</option>
@@ -65,7 +67,7 @@ export default function Profile() {
                 <option value="mr">मराठी (Marathi)</option>
               </select>
             </div>
-            <button className="btn btn-primary" style={{ width: '100%' }}>💾 Save Profile</button>
+            <button className="btn btn-primary" style={{ width: '100%' }}>{t('profile_save')}</button>
           </div>
         </div>
 
@@ -73,7 +75,7 @@ export default function Profile() {
         <div>
           <div className="card" style={{ marginBottom: 'var(--sp-6)' }}>
             <div className="card-header">
-              <h3>🔔 Notification Preferences</h3>
+              <h3>{t('profile_notifications')}</h3>
             </div>
             <div className="card-body">
               <h4 style={{ marginBottom: 'var(--sp-3)', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Channels</h4>
@@ -134,18 +136,18 @@ export default function Profile() {
 
           <div className="card">
             <div className="card-header">
-              <h3>⚙️ About</h3>
+              <h3>{t('profile_about')}</h3>
             </div>
             <div className="card-body">
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                <p style={{ marginBottom: 'var(--sp-3)' }}><strong>SmartCrop Advisory</strong> — SIH 2025 (Problem ID: SIH25010)</p>
-                <p style={{ marginBottom: 'var(--sp-2)' }}>AI-powered crop recommendation system for small & marginal farmers.</p>
-                <p style={{ marginBottom: 'var(--sp-2)' }}>Version 1.0.0</p>
-                <p>Powered by RandomForest & XGBoost ML models.</p>
+                <p style={{ marginBottom: 'var(--sp-3)' }}><strong>{t('profile_aboutTitle')}</strong> — SIH 2025 (Problem ID: SIH25010)</p>
+                <p style={{ marginBottom: 'var(--sp-2)' }}>{t('profile_aboutDesc')}</p>
+                <p style={{ marginBottom: 'var(--sp-2)' }}>{t('profile_version')}</p>
+                <p>{t('profile_poweredBy')}</p>
               </div>
               <div style={{ marginTop: 'var(--sp-4)', display: 'flex', gap: 'var(--sp-2)' }}>
-                <button className="btn btn-secondary btn-sm">📤 Export My Data</button>
-                <button className="btn btn-sm" style={{ background: '#FFEBEE', color: '#C62828' }}>🗑️ Delete Account</button>
+                <button className="btn btn-secondary btn-sm">{t('profile_export')}</button>
+                <button className="btn btn-sm" style={{ background: '#FFEBEE', color: '#C62828' }}>{t('profile_delete')}</button>
               </div>
             </div>
           </div>

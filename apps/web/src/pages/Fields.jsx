@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const DEMO_PLOTS = [
   { id: 1, label: 'South Field', area_ha: 1.5, irrigation: 'tubewell', soil: { N: 90, P: 42, K: 43, pH: 6.5 }, previous_crop: 'rice', lat: 25.3176, lng: 82.9739, status: 'active' },
@@ -15,15 +16,16 @@ const SOIL_STATUS = (ph) => {
 export default function Fields() {
   const [selected, setSelected] = useState(null)
   const [showAddModal, setShowAddModal] = useState(false)
+  const { t } = useLanguage()
 
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-6)' }}>
         <div>
-          <h2>My Fields</h2>
+          <h2>{t('fields_title')}</h2>
           <p className="text-sm text-muted">{DEMO_PLOTS.length} plots registered · {DEMO_PLOTS.reduce((s,p) => s + p.area_ha, 0)} hectares total</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ Add Field</button>
+        <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>{t('fields_addField')}</button>
       </div>
 
       <div className="grid-3">
@@ -40,19 +42,19 @@ export default function Fields() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)', marginTop: 'var(--sp-4)' }}>
                 <div>
-                  <div className="text-xs text-muted">Area</div>
+                  <div className="text-xs text-muted">{t('fields_area')}</div>
                   <div className="font-semibold">{plot.area_ha} ha</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Irrigation</div>
+                  <div className="text-xs text-muted">{t('fields_irrigation')}</div>
                   <div className="font-semibold" style={{ textTransform: 'capitalize' }}>{plot.irrigation}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Previous Crop</div>
+                  <div className="text-xs text-muted">{t('fields_previousCrop')}</div>
                   <div className="font-semibold" style={{ textTransform: 'capitalize' }}>{plot.previous_crop}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Soil Health</div>
+                  <div className="text-xs text-muted">{t('fields_soilHealth')}</div>
                   <span className={`badge ${SOIL_STATUS(plot.soil.pH).color}`}>{SOIL_STATUS(plot.soil.pH).label}</span>
                 </div>
               </div>

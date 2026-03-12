@@ -15,7 +15,7 @@ import random
 from pathlib import Path
 
 # ── Resolve model paths relative to project root ──────────
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "latest_model"
 
 # Global model bundles (loaded once at startup)

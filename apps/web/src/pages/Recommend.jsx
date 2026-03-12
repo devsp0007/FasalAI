@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { recommendCrop } from '../services/api'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const PRESETS = {
   rice_kharif: { nitrogen: 80, phosphorus: 48, potassium: 40, temperature: 27, humidity: 80, ph: 6.5, rainfall: 250, season: 'kharif', label: 'Rice Belt (Kharif)' },
@@ -13,6 +14,7 @@ export default function Recommend() {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const { t } = useLanguage()
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -55,12 +57,12 @@ export default function Recommend() {
         <div>
           <div className="card">
             <div className="card-header">
-              <h3>🧪 Soil & Weather Input</h3>
+              <h3>{t('rec_soilWeatherInput')}</h3>
             </div>
             <div className="card-body">
               {/* Presets */}
               <div style={{ marginBottom: 'var(--sp-5)' }}>
-                <label className="form-label">Quick Presets</label>
+                <label className="form-label">{t('rec_quickPresets')}</label>
                 <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
                   {Object.entries(PRESETS).map(([key, preset]) => (
                     <button key={key} className="btn btn-sm btn-secondary" onClick={() => handlePreset(key)}>
@@ -72,48 +74,48 @@ export default function Recommend() {
 
               <form onSubmit={handleSubmit}>
                 <div className="form-label" style={{ marginBottom: 'var(--sp-3)', color: 'var(--green-700)', fontWeight: 700 }}>
-                  🌍 Soil Nutrients (kg/ha)
+                   {t('rec_soilNutrients')}
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Nitrogen (N)</label>
+                    <label className="form-label">{t('rec_nitrogen')}</label>
                     <input className="form-input" type="number" name="nitrogen" value={form.nitrogen} onChange={handleChange} step="0.1" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Phosphorus (P)</label>
+                    <label className="form-label">{t('rec_phosphorus')}</label>
                     <input className="form-input" type="number" name="phosphorus" value={form.phosphorus} onChange={handleChange} step="0.1" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Potassium (K)</label>
+                    <label className="form-label">{t('rec_potassium')}</label>
                     <input className="form-input" type="number" name="potassium" value={form.potassium} onChange={handleChange} step="0.1" />
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Soil pH</label>
+                    <label className="form-label">{t('rec_soilPh')}</label>
                   <input className="form-input" type="number" name="ph" value={form.ph} onChange={handleChange} step="0.1" min="0" max="14" />
                 </div>
 
                 <div className="form-label" style={{ marginBottom: 'var(--sp-3)', color: 'var(--green-700)', fontWeight: 700, marginTop: 'var(--sp-4)' }}>
-                  🌤️ Weather Conditions
+                   {t('rec_weatherConditions')}
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Temperature (°C)</label>
+                    <label className="form-label">{t('rec_temperature')}</label>
                     <input className="form-input" type="number" name="temperature" value={form.temperature} onChange={handleChange} step="0.1" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Humidity (%)</label>
+                    <label className="form-label">{t('rec_humidity')}</label>
                     <input className="form-input" type="number" name="humidity" value={form.humidity} onChange={handleChange} step="0.1" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Rainfall (mm)</label>
+                    <label className="form-label">{t('rec_rainfall')}</label>
                     <input className="form-input" type="number" name="rainfall" value={form.rainfall} onChange={handleChange} step="0.1" />
                   </div>
                 </div>
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Season</label>
+                    <label className="form-label">{t('rec_season')}</label>
                     <select className="form-select" name="season" value={form.season} onChange={handleChange}>
                       <option value="kharif">Kharif (Jun-Oct)</option>
                       <option value="rabi">Rabi (Nov-Mar)</option>
@@ -121,7 +123,7 @@ export default function Recommend() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Previous Crop</label>
+                    <label className="form-label">{t('rec_previousCrop')}</label>
                     <select className="form-select" name="previous_crop" value={form.previous_crop || ''} onChange={handleChange}>
                       <option value="">None / Unknown</option>
                       <option value="rice">Rice</option>
@@ -135,7 +137,7 @@ export default function Recommend() {
                 </div>
 
                 <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 'var(--sp-2)' }} disabled={loading}>
-                  {loading ? '⏳ Analyzing...' : '🌱 Get Recommendations'}
+                  {loading ? t('rec_analyzing') : t('rec_getRecommendations')}
                 </button>
               </form>
             </div>
@@ -155,22 +157,22 @@ export default function Recommend() {
           {!result && !loading && (
             <div className="empty-state">
               <div className="empty-icon">🌱</div>
-              <h3>Enter Your Soil & Weather Data</h3>
-              <p className="text-secondary">Fill in the form and click "Get Recommendations" to see AI-powered crop suggestions.</p>
+              <h3>{t('rec_enterData')}</h3>
+              <p className="text-secondary">{t('rec_enterDataDesc')}</p>
             </div>
           )}
 
           {loading && (
             <div className="loading-container">
               <div className="spinner"></div>
-              <span>Running AI model inference...</span>
+              <span>{t('rec_runningModel')}</span>
             </div>
           )}
 
           {result && !loading && (
             <div className="animate-fade-in-up">
               <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h2>🎯 Top Recommendations</h2>
+                <h2>{t('rec_topRecommendations')}</h2>
                 <span className="badge badge-green">{result.inference_ms}ms inference</span>
               </div>
 

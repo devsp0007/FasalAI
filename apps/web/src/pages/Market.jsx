@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { getMarketPrices, predictPrice } from '../services/api'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts'
+import { useLanguage } from '../contexts/LanguageContext'
 
 export default function Market() {
+  const { t } = useLanguage()
   const [crop, setCrop] = useState('wheat')
   const [district, setDistrict] = useState('Varanasi')
   const [days, setDays] = useState(30)
@@ -54,7 +56,7 @@ export default function Market() {
       {/* Price Chart */}
       <div className="card" style={{ marginBottom: 'var(--sp-6)' }}>
         <div className="card-header">
-          <h3>📈 Market Price Trends</h3>
+          <h3>{t('market_priceTrends')}</h3>
           <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
             <select className="form-select" style={{ width: 150 }} value={crop} onChange={e => setCrop(e.target.value)}>
               {crops.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
@@ -70,21 +72,21 @@ export default function Market() {
           {priceData && (
             <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', gap: 'var(--sp-6)', alignItems: 'center' }}>
               <div>
-                <div className="text-xs text-muted">Latest Price</div>
+                <div className="text-xs text-muted">{t('market_latestPrice')}</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹{priceData.latest_price?.toLocaleString()}</div>
               </div>
               <div>
-                <div className="text-xs text-muted">Trend</div>
+                <div className="text-xs text-muted">{t('market_trend')}</div>
                 <span className={`badge ${priceData.trend === 'rising' ? 'badge-green' : 'badge-red'}`}>
                   {priceData.trend === 'rising' ? '↑' : '↓'} {Math.abs(priceData.trend_pct)}% {priceData.trend}
                 </span>
               </div>
               <div>
-                <div className="text-xs text-muted">Crop</div>
+                <div className="text-xs text-muted">{t('market_crop')}</div>
                 <div className="font-semibold" style={{ textTransform: 'capitalize' }}>{priceData.crop}</div>
               </div>
               <div>
-                <div className="text-xs text-muted">District</div>
+                <div className="text-xs text-muted">{t('market_district')}</div>
                 <div className="font-semibold">{priceData.district}</div>
               </div>
             </div>
@@ -114,26 +116,26 @@ export default function Market() {
       {/* Price Prediction */}
       <div className="card">
         <div className="card-header">
-          <h3>🔮 Price Prediction (AI)</h3>
+          <h3>{t('market_pricePrediction')}</h3>
           <span className="badge badge-blue">XGBoost Model</span>
         </div>
         <div className="card-body">
           <form onSubmit={handlePredict}>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Commodity</label>
+                <label className="form-label">{t('market_commodity')}</label>
                 <input className="form-input" value={predForm.commodity} onChange={e => setPredForm(f => ({...f, commodity: e.target.value}))} />
               </div>
               <div className="form-group">
-                <label className="form-label">State</label>
+                <label className="form-label">{t('market_state')}</label>
                 <input className="form-input" value={predForm.state} onChange={e => setPredForm(f => ({...f, state: e.target.value}))} />
               </div>
               <div className="form-group">
-                <label className="form-label">District</label>
+                <label className="form-label">{t('market_district')}</label>
                 <input className="form-input" value={predForm.district} onChange={e => setPredForm(f => ({...f, district: e.target.value}))} />
               </div>
               <div className="form-group">
-                <label className="form-label">Market</label>
+                <label className="form-label">{t('market_marketLabel')}</label>
                 <input className="form-input" value={predForm.market} onChange={e => setPredForm(f => ({...f, market: e.target.value}))} />
               </div>
             </div>
@@ -154,13 +156,13 @@ export default function Market() {
               </div>
             </div>
             <button type="submit" className="btn btn-primary" disabled={predLoading}>
-              {predLoading ? '⏳ Predicting...' : '🔮 Predict Price'}
+              {predLoading ? t('market_predicting') : t('market_predictPrice')}
             </button>
           </form>
 
           {prediction && (
             <div className="animate-fade-in-up" style={{ marginTop: 'var(--sp-6)', padding: 'var(--sp-6)', background: 'var(--green-50)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
-              <div className="text-sm text-muted" style={{ marginBottom: 4 }}>Predicted Modal Price</div>
+              <div className="text-sm text-muted" style={{ marginBottom: 4 }}>{t('market_predictedPrice')}</div>
               <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--green-700)' }}>
                 ₹{prediction.predicted_modal_price.toLocaleString()}
               </div>
