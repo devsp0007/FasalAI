@@ -148,6 +148,90 @@ else:
     print("⚠️  Yield dataset not found, skipping.")
 
 
+# ═══════════════════════════════════════════════════
+# MODEL 3: Crop Price (GradientBoosting)
+# ═══════════════════════════════════════════════════
+print("\n" + "=" * 60)
+print("  RETRAINING: Crop Price (GradientBoosting)")
+print("=" * 60)
+
+DATA_PATH3 = os.path.join(DATASETS_DIR, "agmarknet_india_historical_prices_2024_2025.csv")
+if os.path.exists(DATA_PATH3):
+    df3 = pd.read_csv(DATA_PATH3)
+    print(f"Dataset: {df3.shape[0]} rows")
+
+    df3 = df3.rename(columns={
+        "District Name":             "district",
+        "Market Name":               "market",
+        "Commodity":                 "commodity",
+        "Variety":                   "variety",
+        "Grade":                     "grade",
+        "Min Price (Rs./Quintal)":   "min_price",
+        "Max Price (Rs./Quintal)":   "max_price",
+        "Modal Price (Rs./Quintal)": "modal_price",
+        "Price Date":                "price_date",
+        "State":                     "state",
+    })
+
+    df3["price_date"] = pd.to_datetime(df3["price_date"], dayfirst=True, errors="coerce")
+    df3["month"] = df3["price_date"].dt.month.fillna(1).astype(int)
+    df3["year"]  = df3["price_date"].dt.year.fillna(2024).astype(int)
+    df3["price_spread"] = df3["max_price"] - df3["min_price"]
+    df3 = df3.dropna(subset=["modal_price"])
+
+    SAMPLE_SIZE3 = 100_000
+    if len(df3) > SAMPLE_SIZE3:
+        df3 = df3.sample(n=SAMPLE_SIZE3, random_state=42).reset_index(drop=True)
+
+    CAT_FEATURES3 = ["state", "district", "market", "commodity", "variety", "grade"]
+    NUM_FEATURES3 = ["min_price", "max_price", "price_spread", "month", "year"]
+    ALL_FEATURES3 = CAT_FEATURES3 + NUM_FEATURES3
+
+    X3 = df3[ALL_FEATURES3].copy()
+    y3 = df3["modal_price"].values
+    for col in CAT_FEATURES3:
+        X3[col] = X3[col].fillna("Unknown")
+    for col in NUM_FEATURES3:
+        X3[col] = X3[col].fillna(0)
+
+    X3_train, X3_test, y3_train, y3_test = train_test_split(X3, y3, test_size=0.20, random_state=42)
+
+    cat_transformer3 = Pipeline([("enc", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1))])
+    num_transformer3 = Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())])
+    preprocessor3 = ColumnTransformer([("cat", cat_transformer3, CAT_FEATURES3), ("num", num_transformer3, NUM_FEATURES3)])
+
+    pipeline3 = Pipeline([
+        ("preprocessor", preprocessor3),
+        ("model", GradientBoostingRegressor(
+            n_estimators=300, learning_rate=0.05, max_depth=5,
+            min_samples_split=10, min_samples_leaf=5,
+            subsample=0.8, max_features="sqrt", random_state=42,
+        ))
+    ])
+    print("Training price model...")
+    pipeline3.fit(X3_train, y3_train)
+
+    from sklearn.metrics import r2_score as r2_score_price
+    r2_price = r2_score_price(y3_test, pipeline3.predict(X3_test))
+    print(f"Test R²: {r2_price:.4f}")
+
+    bundle3 = {
+        "pipeline":     pipeline3,
+        "feature_cols": ALL_FEATURES3,
+        "cat_features": CAT_FEATURES3,
+        "num_features": NUM_FEATURES3,
+        "target_col":   "modal_price",
+        "commodities":  sorted(df3["commodity"].unique().tolist()),
+        "states":       sorted(df3["state"].unique().tolist()),
+    }
+    model_path3 = os.path.join(OUTPUT_DIR, "crop_price_xgboost.pkl")
+    joblib.dump(bundle3, model_path3, compress=3)
+    print(f"✅ Saved: {model_path3}")
+else:
+    print("⚠️  Price dataset not found, skipping.")
+
+
 print("\n🎉 All models retrained with current sklearn version!")
 print(f"   sklearn: {__import__('sklearn').__version__}")
 print(f"   numpy:   {np.__version__}")
+
