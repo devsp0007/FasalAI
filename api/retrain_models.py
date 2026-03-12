@@ -17,6 +17,9 @@ from sklearn.impute import SimpleImputer
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "latest_model")
 DATASETS_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 
+# Ensure the output directory exists before attempting to save models
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 # ═══════════════════════════════════════════════════
 # MODEL 1: Crop Recommendation (RandomForest)
 # ═══════════════════════════════════════════════════
