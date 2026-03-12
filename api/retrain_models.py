@@ -14,8 +14,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "latest_model")
-DATASETS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "datasets")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "latest_model")
+DATASETS_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 
 # ═══════════════════════════════════════════════════
 # MODEL 1: Crop Recommendation (RandomForest)
