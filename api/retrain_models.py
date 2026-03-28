@@ -1,12 +1,13 @@
 """
 Quick retraining script — Retrains models with the current sklearn version.
-Only retrains the crop recommendation model (primary model for the demo).
+Retrains crop recommendation with the new state-aware dataset.
 """
 import os
 import json
 import joblib
 import numpy as np
 import pandas as pd
+from collections import Counter
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler, OrdinalEncoder
@@ -21,52 +22,204 @@ DATASETS_DIR = os.path.join(os.path.dirname(__file__), "..", "datasets")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ═══════════════════════════════════════════════════
-# MODEL 1: Crop Recommendation (RandomForest)
+# MODEL 1: Crop Recommendation (RandomForest) — NEW STATE-AWARE DATASET
 # ═══════════════════════════════════════════════════
 print("=" * 60)
-print("  RETRAINING: Crop Recommendation (RF)")
+print("  RETRAINING: Crop Recommendation (RF) — State-Aware")
 print("=" * 60)
 
-DATA_PATH = os.path.join(DATASETS_DIR, "Crop_recommendation.csv")
-df = pd.read_csv(DATA_PATH)
-print(f"Dataset: {df.shape[0]} rows, {df.shape[1]} cols")
+# Try new dataset first, fall back to old dataset
+NEW_DATA_PATH = os.path.join(DATASETS_DIR, "crop_data.csv")
+OLD_DATA_PATH = os.path.join(DATASETS_DIR, "Crop_recommendation.csv")
 
-FEATURE_COLS = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
-X = df[FEATURE_COLS].values
-y = df["label"].values
+if os.path.exists(NEW_DATA_PATH):
+    df = pd.read_csv(NEW_DATA_PATH)
+    print(f"Dataset: {df.shape[0]} rows, {df.shape[1]} cols (NEW state-aware dataset)")
 
-le = LabelEncoder()
-y_enc = le.fit_transform(y)
-class_names = list(le.classes_)
+    # Rename columns to internal names
+    df = df.rename(columns={
+        "N_SOIL": "N",
+        "P_SOIL": "P",
+        "K_SOIL": "K",
+        "TEMPERATURE": "temperature",
+        "HUMIDITY": "humidity",
+        "RAINFALL": "rainfall",
+        "CROP": "label",
+        "STATE": "state",
+        "SOIL_TYPE": "soil_type",
+        "CROP_PRICE": "crop_price",
+    })
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y_enc, test_size=0.20, random_state=42, stratify=y_enc
-)
+    # Clean data
+    df = df.dropna(subset=["label", "N", "P", "K", "temperature", "humidity", "ph", "rainfall"])
+    print(f"After cleaning: {df.shape[0]} rows")
 
-pipeline = Pipeline([
-    ("scaler", StandardScaler()),
-    ("clf", RandomForestClassifier(
-        n_estimators=200, max_depth=None,
-        min_samples_split=2, min_samples_leaf=1,
-        max_features="sqrt", class_weight="balanced",
-        random_state=42, n_jobs=-1,
-    ))
-])
-pipeline.fit(X_train, y_train)
+    # ── IMPORTANT: Augment data to ensure sufficient samples per crop ──
+    # The dataset has only ~15 samples per crop on average, which is too sparse.
+    # We augment by adding jittered copies of underrepresented crops.
+    MIN_SAMPLES = 10
+    crop_counts = df["label"].value_counts()
+    underrep_crops = crop_counts[crop_counts < MIN_SAMPLES].index.tolist()
+    print(f"Augmenting {len(underrep_crops)} underrepresented crops (< {MIN_SAMPLES} samples)")
 
-from sklearn.metrics import accuracy_score
-acc = accuracy_score(y_test, pipeline.predict(X_test))
-print(f"Test Accuracy: {acc:.4f}")
+    augmented_rows = []
+    np.random.seed(42)
+    for crop_name in underrep_crops:
+        crop_df = df[df["label"] == crop_name]
+        n_needed = MIN_SAMPLES - len(crop_df)
+        for _ in range(n_needed):
+            # Sample a random existing row and jitter numerical values
+            row = crop_df.sample(1, replace=True).iloc[0].copy()
+            for col in ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]:
+                jitter = np.random.normal(0, row[col] * 0.05 + 0.5)  # 5% noise
+                row[col] = max(0, row[col] + jitter)
+            augmented_rows.append(row)
 
-bundle = {
-    "pipeline": pipeline,
-    "label_encoder": le,
-    "feature_cols": FEATURE_COLS,
-    "class_names": class_names,
-}
-model_path = os.path.join(OUTPUT_DIR, "crop_recommendation_rf.pkl")
-joblib.dump(bundle, model_path, compress=3)
-print(f"✅ Saved: {model_path}")
+    if augmented_rows:
+        aug_df = pd.DataFrame(augmented_rows)
+        df = pd.concat([df, aug_df], ignore_index=True)
+        print(f"After augmentation: {df.shape[0]} rows")
+
+    print(f"States: {df['state'].nunique()} unique")
+    print(f"Crops: {df['label'].nunique()} unique")
+    print(f"Soil types: {df['soil_type'].nunique()} unique")
+
+    # Encode categorical features
+    state_encoder = LabelEncoder()
+    soil_encoder = LabelEncoder()
+    df["state_enc"] = state_encoder.fit_transform(df["state"].fillna("Unknown"))
+    df["soil_enc"] = soil_encoder.fit_transform(df["soil_type"].fillna("Unknown"))
+
+    FEATURE_COLS = ["state_enc", "soil_enc", "N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
+    X = df[FEATURE_COLS].values
+    y = df["label"].values
+
+    # ── CRITICAL: Fit label encoder on the SAME data used for training ──
+    le = LabelEncoder()
+    y_enc = le.fit_transform(y)
+    class_names = list(le.classes_)
+    print(f"Total classes: {len(class_names)}")
+
+    # All classes now have >= MIN_SAMPLES, so stratified split should work
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y_enc, test_size=0.20, random_state=42, stratify=y_enc
+        )
+    except ValueError:
+        # Fallback to non-stratified split
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y_enc, test_size=0.20, random_state=42
+        )
+        print("  ⚠️ Used non-stratified split")
+
+    pipeline = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", RandomForestClassifier(
+            n_estimators=500, max_depth=25,
+            min_samples_split=2, min_samples_leaf=1,
+            max_features="sqrt", class_weight="balanced",
+            random_state=42, n_jobs=-1,
+        ))
+    ])
+    pipeline.fit(X_train, y_train)
+
+    from sklearn.metrics import accuracy_score
+    acc = accuracy_score(y_test, pipeline.predict(X_test))
+    print(f"Test Accuracy: {acc:.4f}")
+
+    # Verify: pipeline output classes match label encoder
+    n_pipeline_classes = pipeline.named_steps["clf"].n_classes_
+    n_encoder_classes = len(le.classes_)
+    print(f"Pipeline classes: {n_pipeline_classes}, Encoder classes: {n_encoder_classes}")
+    assert n_pipeline_classes == n_encoder_classes, \
+        f"MISMATCH: pipeline has {n_pipeline_classes} classes but encoder has {n_encoder_classes}"
+
+    # Build state → crops mapping from dataset for quick lookup
+    state_crops_map = {}
+    for state_name in df["state"].unique():
+        state_df = df[df["state"] == state_name]
+        crop_counts = state_df["label"].value_counts()
+        state_crops_map[state_name] = crop_counts.index.tolist()
+
+    # Build soil types list
+    soil_types = sorted(df["soil_type"].dropna().unique().tolist())
+
+    bundle = {
+        "pipeline": pipeline,
+        "label_encoder": le,
+        "state_encoder": state_encoder,
+        "soil_encoder": soil_encoder,
+        "feature_cols": FEATURE_COLS,
+        "raw_feature_cols": ["state", "soil_type", "N", "P", "K", "temperature", "humidity", "ph", "rainfall"],
+        "class_names": class_names,
+        "states": sorted(df["state"].unique().tolist()),
+        "soil_types": soil_types,
+        "state_crops_map": state_crops_map,
+        "dataset_version": "v2_state_aware",
+    }
+    model_path = os.path.join(OUTPUT_DIR, "crop_recommendation_rf.pkl")
+    joblib.dump(bundle, model_path, compress=3)
+    print(f"✅ Saved: {model_path}")
+
+    # Quick verification
+    state_val = state_encoder.transform(["Uttar Pradesh"])[0]
+    soil_val = soil_encoder.transform(["Alluvial soil"])[0]
+    sample = pd.DataFrame([{
+        "state_enc": state_val, "soil_enc": soil_val,
+        "N": 90, "P": 42, "K": 43,
+        "temperature": 18, "humidity": 65, "ph": 7.0, "rainfall": 50,
+    }])
+    proba = pipeline.predict_proba(sample)[0]
+    top5 = np.argsort(proba)[::-1][:5]
+    print("\n  Quick verify — Wheat-like inputs for UP:")
+    for i in top5:
+        print(f"    {class_names[i]:25s} {proba[i]*100:.2f}%")
+
+elif os.path.exists(OLD_DATA_PATH):
+    # Fallback to old dataset
+    df = pd.read_csv(OLD_DATA_PATH)
+    print(f"Dataset: {df.shape[0]} rows, {df.shape[1]} cols (OLD dataset fallback)")
+
+    FEATURE_COLS = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
+    X = df[FEATURE_COLS].values
+    y = df["label"].values
+
+    le = LabelEncoder()
+    y_enc = le.fit_transform(y)
+    class_names = list(le.classes_)
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y_enc, test_size=0.20, random_state=42, stratify=y_enc
+    )
+
+    pipeline = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", RandomForestClassifier(
+            n_estimators=200, max_depth=None,
+            min_samples_split=2, min_samples_leaf=1,
+            max_features="sqrt", class_weight="balanced",
+            random_state=42, n_jobs=-1,
+        ))
+    ])
+    pipeline.fit(X_train, y_train)
+
+    from sklearn.metrics import accuracy_score
+    acc = accuracy_score(y_test, pipeline.predict(X_test))
+    print(f"Test Accuracy: {acc:.4f}")
+
+    bundle = {
+        "pipeline": pipeline,
+        "label_encoder": le,
+        "feature_cols": FEATURE_COLS,
+        "raw_feature_cols": FEATURE_COLS,
+        "class_names": class_names,
+        "dataset_version": "v1_legacy",
+    }
+    model_path = os.path.join(OUTPUT_DIR, "crop_recommendation_rf.pkl")
+    joblib.dump(bundle, model_path, compress=3)
+    print(f"✅ Saved: {model_path}")
+else:
+    print("⚠️  No crop recommendation dataset found, skipping.")
 
 
 # ═══════════════════════════════════════════════════
@@ -234,4 +387,3 @@ else:
 print("\n🎉 All models retrained with current sklearn version!")
 print(f"   sklearn: {__import__('sklearn').__version__}")
 print(f"   numpy:   {np.__version__}")
-

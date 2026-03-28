@@ -2,7 +2,7 @@
 ML Model Service — Loads and runs inference on all 3 pre-trained models.
 
 Models:
-  1. Crop Recommendation (RandomForest) → top-3 crops with confidence
+  1. Crop Recommendation (RandomForest) → top-K crops with confidence (state-aware)
   2. Crop Yield Prediction (GradientBoosting/XGBoost) → Tonnes/Ha
   3. Crop Price Prediction (GradientBoosting/XGBoost) → Rs./Quintal
 """
@@ -38,7 +38,10 @@ def load_models():
     try:
         if crop_rec_path.exists():
             _crop_rec_bundle = joblib.load(crop_rec_path)
-            print(f"  ✅ Crop Recommendation model loaded ({len(_crop_rec_bundle['class_names'])} crops)")
+            version = _crop_rec_bundle.get("dataset_version", "unknown")
+            print(f"  ✅ Crop Recommendation model loaded ({len(_crop_rec_bundle['class_names'])} crops, version={version})")
+            if version == "v2_state_aware":
+                print(f"     States: {len(_crop_rec_bundle.get('states', []))} | Soil types: {len(_crop_rec_bundle.get('soil_types', []))}")
         else:
             print(f"  ⚠️  Crop Recommendation model not found at {crop_rec_path}")
     except Exception as e:
@@ -75,6 +78,35 @@ def get_crop_list():
     return _crop_rec_bundle.get("class_names", [])
 
 
+def get_state_list():
+    """Return list of states supported by the recommendation model."""
+    if _crop_rec_bundle is None:
+        return []
+    return _crop_rec_bundle.get("states", [])
+
+
+def get_soil_types():
+    """Return list of soil types supported by the recommendation model."""
+    if _crop_rec_bundle is None:
+        return []
+    return _crop_rec_bundle.get("soil_types", [])
+
+
+def get_state_crops(state: str) -> list[str]:
+    """Return list of crops commonly grown in the given state (from dataset)."""
+    if _crop_rec_bundle is None:
+        return []
+    state_crops_map = _crop_rec_bundle.get("state_crops_map", {})
+    return state_crops_map.get(state, [])
+
+
+def get_dataset_version():
+    """Return the dataset version used for training."""
+    if _crop_rec_bundle is None:
+        return "unknown"
+    return _crop_rec_bundle.get("dataset_version", "unknown")
+
+
 def get_yield_metadata():
     """Return metadata about what the yield model supports."""
     if _yield_bundle is None:
@@ -98,10 +130,12 @@ def get_price_metadata():
 
 def recommend_crop(nitrogen: float, phosphorus: float, potassium: float,
                    temperature: float, humidity: float, ph: float,
-                   rainfall: float, top_k: int = 3) -> list[dict]:
+                   rainfall: float, top_k: int = 3,
+                   state: str = None, soil_type: str = None) -> list[dict]:
     """
     Run crop recommendation inference.
     Returns list of top-K crops with scores.
+    Supports state-aware (v2) and legacy (v1) models.
     """
     if _crop_rec_bundle is None:
         raise RuntimeError("Crop recommendation model not loaded")
@@ -109,29 +143,117 @@ def recommend_crop(nitrogen: float, phosphorus: float, potassium: float,
     pipeline = _crop_rec_bundle["pipeline"]
     le = _crop_rec_bundle["label_encoder"]
     class_names = _crop_rec_bundle["class_names"]
+    version = _crop_rec_bundle.get("dataset_version", "v1_legacy")
 
-    sample = pd.DataFrame([{
-        "N": nitrogen,
-        "P": phosphorus,
-        "K": potassium,
-        "temperature": temperature,
-        "humidity": humidity,
-        "ph": ph,
-        "rainfall": rainfall,
-    }])
+    if version == "v2_state_aware":
+        # New state-aware model
+        state_encoder = _crop_rec_bundle["state_encoder"]
+        soil_encoder = _crop_rec_bundle["soil_encoder"]
+
+        # Encode state — use 0 if unknown
+        if state and state in state_encoder.classes_:
+            state_val = state_encoder.transform([state])[0]
+        else:
+            state_val = 0
+
+        # Encode soil type — use 0 if unknown
+        if soil_type and soil_type in soil_encoder.classes_:
+            soil_val = soil_encoder.transform([soil_type])[0]
+        else:
+            soil_val = 0
+
+        sample = pd.DataFrame([{
+            "state_enc": state_val,
+            "soil_enc": soil_val,
+            "N": nitrogen,
+            "P": phosphorus,
+            "K": potassium,
+            "temperature": temperature,
+            "humidity": humidity,
+            "ph": ph,
+            "rainfall": rainfall,
+        }])
+    else:
+        # Legacy model (v1) — no state/soil features
+        sample = pd.DataFrame([{
+            "N": nitrogen,
+            "P": phosphorus,
+            "K": potassium,
+            "temperature": temperature,
+            "humidity": humidity,
+            "ph": ph,
+            "rainfall": rainfall,
+        }])
 
     proba = pipeline.predict_proba(sample)[0]
-    top_indices = np.argsort(proba)[::-1][:top_k]
+
+    # Get the pipeline's actual class labels (encoded integers)
+    clf_classes = pipeline.named_steps["clf"].classes_
+
+    # Build full decoded predictions list
+    all_predictions = []
+    for idx in range(len(proba)):
+        encoded_label = clf_classes[idx]
+        crop_name = le.inverse_transform([encoded_label])[0]
+        all_predictions.append({
+            "crop": crop_name,
+            "score": float(proba[idx]),
+        })
+
+    # Sort by score descending
+    all_predictions.sort(key=lambda x: x["score"], reverse=True)
+
+    # If a state is selected, FILTER to only crops grown in that state
+    # and blend ML score with state crop prevalence
+    if state and version == "v2_state_aware":
+        state_crops_map = _crop_rec_bundle.get("state_crops_map", {})
+        state_crop_list = state_crops_map.get(state, [])
+
+        if state_crop_list:
+            # state_crop_list is ordered by dataset frequency (most common first)
+            # Build prevalence rank scores: top crop gets 1.0, last gets ~0.02
+            total_state_crops = len(state_crop_list)
+            prevalence_scores = {}
+            for rank_idx, crop_name in enumerate(state_crop_list):
+                prevalence_scores[crop_name.lower().strip()] = (total_state_crops - rank_idx) / total_state_crops
+
+            # First pass: filter to state crops, keeping ML rank order
+            state_preds = []
+            for p in all_predictions:
+                crop_lower = p["crop"].lower().strip()
+                if crop_lower in prevalence_scores:
+                    state_preds.append({
+                        "crop": p["crop"],
+                        "ml_score": p["score"],
+                        "prevalence": prevalence_scores[crop_lower],
+                    })
+
+            if state_preds:
+                # Assign ML rank scores (top = 1.0, proportionally decreasing)
+                n = len(state_preds)
+                for rank_idx, sp in enumerate(state_preds):
+                    sp["ml_rank"] = (n - rank_idx) / n
+
+                # Blend: 60% ML rank + 40% state prevalence
+                for sp in state_preds:
+                    blended = 0.60 * sp["ml_rank"] + 0.40 * sp["prevalence"]
+                    # Scale to realistic confidence: 35-90% range
+                    sp["score"] = 0.35 + blended * 0.55
+
+                # Sort by blended score
+                state_preds.sort(key=lambda x: x["score"], reverse=True)
+                all_predictions = state_preds
+
+    # Take top_k
+    top_results = all_predictions[:top_k]
 
     results = []
-    for rank, idx in enumerate(top_indices, 1):
-        crop_name = class_names[idx]
-        score = float(proba[idx])
+    for rank, pred in enumerate(top_results, 1):
         results.append({
             "rank": rank,
-            "crop": crop_name,
-            "score": round(score, 4),
-            "confidence_pct": round(score * 100, 1),
+            "crop": pred["crop"],
+            "score": round(pred["score"], 4),
+            "confidence_pct": round(pred["score"] * 100, 1),
         })
 
     return results

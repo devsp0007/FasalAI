@@ -15,11 +15,14 @@ node_modules/
 apps/web/dist/
 .cache/
 
-# ML Models (large binaries)
+# ML Models (regenerated on deploy)
 *.pkl
 
-# Data
-datasets/
+# SQLite DB (regenerated on deploy)
+latest_model/smartcrop.db
+
+# Data (exclude very large files, keep required training data)
+datasets/agmarknet_india_historical_prices_*.csv
 
 # IDE
 .vscode/
@@ -39,3 +42,6 @@ desktop.ini
 
 # Logs
 *.log
+
+# Changes folder (dev only)
+changes_new/

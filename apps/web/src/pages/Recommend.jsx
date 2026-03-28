@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { recommendCrop } from '../services/api'
+import { useState, useEffect } from 'react'
+import { recommendCrop, getStates, getCropsByState } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
 
 const PRESETS = {
@@ -9,16 +9,57 @@ const PRESETS = {
   default: { nitrogen: 90, phosphorus: 42, potassium: 43, temperature: 20.8, humidity: 82, ph: 6.5, rainfall: 202.9, season: 'kharif', label: 'Default' },
 }
 
+const SOIL_TYPES_FALLBACK = [
+  'Alluvial soil', 'Black soil', 'Clayey soils', 'Desert soil', 'Desert soils',
+  'Laterite soil', 'Red soil', 'Regur soil', 'Sandy Clay loam', 'Sandy loam', 'Sandy soil',
+]
+
 export default function Recommend() {
-  const [form, setForm] = useState(PRESETS.default)
+  const [form, setForm] = useState({ ...PRESETS.default, state: '', soil_type: '' })
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const { t } = useLanguage()
 
+  // State-based pre-recommendations
+  const [states, setStates] = useState([])
+  const [stateCrops, setStateCrops] = useState(null)
+  const [stateLoading, setStateLoading] = useState(false)
+
+  // Load states on mount
+  useEffect(() => {
+    getStates()
+      .then(data => setStates(data.states || []))
+      .catch(() => setStates([]))
+  }, [])
+
+  // Fetch state-based crop recommendations when state changes
+  useEffect(() => {
+    if (!form.state) {
+      setStateCrops(null)
+      return
+    }
+    setStateLoading(true)
+    getCropsByState(form.state)
+      .then(data => {
+        setStateCrops(data)
+        // Auto-set soil type if available
+        if (data.soil_types && data.soil_types.length > 0 && !form.soil_type) {
+          setForm(prev => ({ ...prev, soil_type: data.soil_types[0] }))
+        }
+      })
+      .catch(() => setStateCrops(null))
+      .finally(() => setStateLoading(false))
+  }, [form.state])
+
   const handleChange = (e) => {
     const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: name === 'season' || name === 'previous_crop' ? value : parseFloat(value) || 0 }))
+    setForm(prev => ({
+      ...prev,
+      [name]: ['season', 'previous_crop', 'state', 'soil_type'].includes(name)
+        ? value
+        : parseFloat(value) || 0
+    }))
   }
 
   const handlePreset = (key) => {
@@ -41,6 +82,8 @@ export default function Recommend() {
         rainfall: form.rainfall,
         season: form.season,
         previous_crop: form.previous_crop || null,
+        state: form.state || null,
+        soil_type: form.soil_type || null,
       })
       setResult(data)
     } catch (err) {
@@ -49,6 +92,10 @@ export default function Recommend() {
       setLoading(false)
     }
   }
+
+  const soilTypes = stateCrops?.soil_types?.length > 0
+    ? stateCrops.soil_types
+    : SOIL_TYPES_FALLBACK
 
   return (
     <div className="animate-fade-in">
@@ -60,8 +107,33 @@ export default function Recommend() {
               <h3>{t('rec_soilWeatherInput')}</h3>
             </div>
             <div className="card-body">
+              {/* Location Section */}
+              <div className="form-label" style={{ marginBottom: 'var(--sp-3)', color: 'var(--green-700)', fontWeight: 700 }}>
+                📍 Location
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">State</label>
+                  <select className="form-select" name="state" value={form.state} onChange={handleChange}>
+                    <option value="">Select State</option>
+                    {states.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Soil Type</label>
+                  <select className="form-select" name="soil_type" value={form.soil_type} onChange={handleChange}>
+                    <option value="">Select Soil Type</option>
+                    {soilTypes.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               {/* Presets */}
-              <div style={{ marginBottom: 'var(--sp-5)' }}>
+              <div style={{ marginBottom: 'var(--sp-5)', marginTop: 'var(--sp-3)' }}>
                 <label className="form-label">{t('rec_quickPresets')}</label>
                 <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
                   {Object.entries(PRESETS).map(([key, preset]) => (
@@ -132,6 +204,8 @@ export default function Recommend() {
                       <option value="cotton">Cotton</option>
                       <option value="chickpea">Chickpea</option>
                       <option value="mungbean">Mungbean</option>
+                      <option value="sugarcane">Sugarcane</option>
+                      <option value="potato">Potato</option>
                     </select>
                   </div>
                 </div>
@@ -146,6 +220,48 @@ export default function Recommend() {
 
         {/* Results */}
         <div>
+          {/* State-based pre-recommendations */}
+          {stateCrops && stateCrops.crops && stateCrops.crops.length > 0 && !result && (
+            <div className="card animate-fade-in" style={{ marginBottom: 'var(--sp-4)' }}>
+              <div className="card-header">
+                <h3>🌍 Best Crops for {form.state}</h3>
+                {stateCrops.climate && <span className="badge badge-green">{stateCrops.climate.split(',')[0]}</span>}
+              </div>
+              <div className="card-body">
+                <p className="text-sm text-muted" style={{ marginBottom: 'var(--sp-4)' }}>
+                  Based on your state's climate and soil. Enter soil details above for more accurate AI-powered results.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 'var(--sp-3)' }}>
+                  {stateCrops.crops.slice(0, 12).map((crop, i) => (
+                    <div key={i} style={{
+                      background: 'var(--green-50)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: 'var(--sp-3)',
+                      border: '1px solid var(--green-200)',
+                    }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>
+                        🌱 {crop.name || crop}
+                      </div>
+                      {crop.season && (
+                        <div className="text-xs text-muted">📅 {crop.season}</div>
+                      )}
+                      {crop.reason && (
+                        <div className="text-xs text-secondary" style={{ marginTop: 2 }}>{crop.reason}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {stateLoading && (
+            <div className="loading-container" style={{ marginBottom: 'var(--sp-4)' }}>
+              <div className="spinner"></div>
+              <span>Loading state recommendations...</span>
+            </div>
+          )}
+
           {error && (
             <div className="card animate-fade-in" style={{ borderColor: 'var(--danger)', marginBottom: 'var(--sp-4)' }}>
               <div className="card-body" style={{ color: 'var(--danger)' }}>
@@ -154,11 +270,14 @@ export default function Recommend() {
             </div>
           )}
 
-          {!result && !loading && (
+          {!result && !loading && !stateCrops && (
             <div className="empty-state">
               <div className="empty-icon">🌱</div>
               <h3>{t('rec_enterData')}</h3>
               <p className="text-secondary">{t('rec_enterDataDesc')}</p>
+              <p className="text-sm text-muted" style={{ marginTop: 'var(--sp-2)' }}>
+                💡 Tip: Select your state first to see location-based crop suggestions!
+              </p>
             </div>
           )}
 
@@ -173,7 +292,12 @@ export default function Recommend() {
             <div className="animate-fade-in-up">
               <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <h2>{t('rec_topRecommendations')}</h2>
-                <span className="badge badge-green">{result.inference_ms}ms inference</span>
+                <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                  <span className="badge badge-green">{result.inference_ms}ms</span>
+                  {result.dataset_version === 'v2_state_aware' && (
+                    <span className="badge" style={{ background: '#E3F2FD', color: '#1565C0' }}>State-Aware</span>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
@@ -235,6 +359,8 @@ export default function Recommend() {
                 <div className="card-body text-sm text-muted">
                   <strong>Model:</strong> {result.model_version} | <strong>Inference:</strong> {result.inference_ms}ms |
                   <strong> Input:</strong> N={result.input_summary.soil.N}, P={result.input_summary.soil.P}, K={result.input_summary.soil.K}, pH={result.input_summary.soil['pH']}
+                  {result.input_summary.state && <> | <strong>State:</strong> {result.input_summary.state}</>}
+                  {result.input_summary.soil_type && <> | <strong>Soil:</strong> {result.input_summary.soil_type}</>}
                 </div>
               </div>
             </div>
