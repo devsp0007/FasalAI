@@ -234,69 +234,73 @@ if os.path.exists(DATA_PATH2):
     df2 = pd.read_csv(DATA_PATH2)
     print(f"Dataset: {df2.shape[0]} rows")
 
-    df2["year_num"] = df2["Year"].str[:4].astype(int)
-    df2 = df2.dropna(subset=["Yield", "Area", "Crop", "Season"])
-    df2 = df2[df2["Yield"] > 0]
-    q995 = df2["Yield"].quantile(0.995)
-    df2 = df2[df2["Yield"] <= q995]
+    if df2.shape[0] < 100:
+        print("⚠️  Dataset too small (likely LFS pointer). Skipping yield model.")
+        print("   Run 'git lfs pull' to fetch the actual dataset.")
+    else:
+        df2["year_num"] = df2["Year"].str[:4].astype(int)
+        df2 = df2.dropna(subset=["Yield", "Area", "Crop", "Season"])
+        df2 = df2[df2["Yield"] > 0]
+        q995 = df2["Yield"].quantile(0.995)
+        df2 = df2[df2["Yield"] <= q995]
 
-    SAMPLE_SIZE = 80_000
-    if len(df2) > SAMPLE_SIZE:
-        df2 = df2.sample(n=SAMPLE_SIZE, random_state=42).reset_index(drop=True)
+        SAMPLE_SIZE = 80_000
+        if len(df2) > SAMPLE_SIZE:
+            df2 = df2.sample(n=SAMPLE_SIZE, random_state=42).reset_index(drop=True)
 
-    CAT_FEATURES = ["State", "District", "Crop", "Season"]
-    NUM_FEATURES = ["log_area", "year_num"]
-    ALL_FEATURES = CAT_FEATURES + NUM_FEATURES
+        CAT_FEATURES = ["State", "District", "Crop", "Season"]
+        NUM_FEATURES = ["log_area", "year_num"]
+        ALL_FEATURES = CAT_FEATURES + NUM_FEATURES
 
-    df2["log_area"] = np.log1p(df2["Area"])
-    X2 = df2[ALL_FEATURES].copy()
-    y2 = df2["Yield"].values
+        df2["log_area"] = np.log1p(df2["Area"])
+        X2 = df2[ALL_FEATURES].copy()
+        y2 = df2["Yield"].values
 
-    for col in CAT_FEATURES:
-        X2[col] = X2[col].fillna("Unknown")
+        for col in CAT_FEATURES:
+            X2[col] = X2[col].fillna("Unknown")
 
-    split_year = 2018
-    mask_train = df2["year_num"] < split_year
-    mask_test = df2["year_num"] >= split_year
+        split_year = 2018
+        mask_train = df2["year_num"] < split_year
+        mask_test = df2["year_num"] >= split_year
 
-    X2_train, y2_train = X2[mask_train], y2[mask_train]
-    X2_test, y2_test = X2[mask_test], y2[mask_test]
+        X2_train, y2_train = X2[mask_train], y2[mask_train]
+        X2_test, y2_test = X2[mask_test], y2[mask_test]
 
-    cat_transformer = Pipeline([("enc", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1))])
-    num_transformer = Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())])
-    preprocessor = ColumnTransformer([("cat", cat_transformer, CAT_FEATURES), ("num", num_transformer, NUM_FEATURES)])
+        cat_transformer = Pipeline([("enc", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1))])
+        num_transformer = Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())])
+        preprocessor = ColumnTransformer([("cat", cat_transformer, CAT_FEATURES), ("num", num_transformer, NUM_FEATURES)])
 
-    pipeline2 = Pipeline([
-        ("preprocessor", preprocessor),
-        ("model", GradientBoostingRegressor(
-            n_estimators=200, learning_rate=0.08, max_depth=5,
-            min_samples_split=20, min_samples_leaf=10,
-            subsample=0.8, max_features="sqrt", random_state=42,
-        ))
-    ])
-    print("Training yield model...")
-    pipeline2.fit(X2_train, y2_train)
+        pipeline2 = Pipeline([
+            ("preprocessor", preprocessor),
+            ("model", GradientBoostingRegressor(
+                n_estimators=200, learning_rate=0.08, max_depth=5,
+                min_samples_split=20, min_samples_leaf=10,
+                subsample=0.8, max_features="sqrt", random_state=42,
+            ))
+        ])
+        print("Training yield model...")
+        pipeline2.fit(X2_train, y2_train)
 
-    from sklearn.metrics import r2_score
-    y2_pred = np.maximum(pipeline2.predict(X2_test), 0)
-    r2 = r2_score(y2_test, y2_pred)
-    print(f"Test R²: {r2:.4f}")
+        from sklearn.metrics import r2_score
+        y2_pred = np.maximum(pipeline2.predict(X2_test), 0)
+        r2 = r2_score(y2_test, y2_pred)
+        print(f"Test R²: {r2:.4f}")
 
-    bundle2 = {
-        "pipeline": pipeline2,
-        "feature_cols": ALL_FEATURES,
-        "cat_features": CAT_FEATURES,
-        "num_features": NUM_FEATURES,
-        "target_col": "Yield",
-        "target_unit": "Tonnes per Hectare",
-        "crops": sorted(df2["Crop"].unique().tolist()),
-        "states": sorted(df2["State"].unique().tolist()),
-        "seasons": sorted(df2["Season"].unique().tolist()),
-        "year_range": [int(df2["year_num"].min()), int(df2["year_num"].max())],
-    }
-    model_path2 = os.path.join(OUTPUT_DIR, "crop_yield_xgboost.pkl")
-    joblib.dump(bundle2, model_path2, compress=3)
-    print(f"✅ Saved: {model_path2}")
+        bundle2 = {
+            "pipeline": pipeline2,
+            "feature_cols": ALL_FEATURES,
+            "cat_features": CAT_FEATURES,
+            "num_features": NUM_FEATURES,
+            "target_col": "Yield",
+            "target_unit": "Tonnes per Hectare",
+            "crops": sorted(df2["Crop"].unique().tolist()),
+            "states": sorted(df2["State"].unique().tolist()),
+            "seasons": sorted(df2["Season"].unique().tolist()),
+            "year_range": [int(df2["year_num"].min()), int(df2["year_num"].max())],
+        }
+        model_path2 = os.path.join(OUTPUT_DIR, "crop_yield_xgboost.pkl")
+        joblib.dump(bundle2, model_path2, compress=3)
+        print(f"✅ Saved: {model_path2}")
 else:
     print("⚠️  Yield dataset not found, skipping.")
 
