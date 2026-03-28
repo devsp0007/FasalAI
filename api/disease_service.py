@@ -57,20 +57,25 @@ DEFAULT_TREATMENT = {
 
 
 def _load_tflite_model(model_path):
-    """Load a TFLite model using tflite-runtime or tf.lite as fallback."""
+    """Load a TFLite model using ai-edge-litert, tflite-runtime, or tf.lite."""
     try:
-        # Try lightweight tflite-runtime first (~5MB)
-        from tflite_runtime.interpreter import Interpreter
-        interpreter = Interpreter(model_path=str(model_path))
+        # Try ai-edge-litert first (Google's official replacement for tflite-runtime)
+        from ai_edge_litert import interpreter as litert
+        interpreter = litert.Interpreter(model_path=str(model_path))
     except ImportError:
         try:
-            # Fallback to full TensorFlow if available (local dev)
-            import tensorflow as tf
-            interpreter = tf.lite.Interpreter(model_path=str(model_path))
+            # Try legacy tflite-runtime
+            from tflite_runtime.interpreter import Interpreter
+            interpreter = Interpreter(model_path=str(model_path))
         except ImportError:
-            print("  ⚠️  Neither tflite-runtime nor tensorflow is installed!")
-            print("  ℹ️  Install with: pip install tflite-runtime")
-            return None
+            try:
+                # Fallback to full TensorFlow if available (local dev)
+                import tensorflow as tf
+                interpreter = tf.lite.Interpreter(model_path=str(model_path))
+            except ImportError:
+                print("  ⚠️  No TFLite runtime found!")
+                print("  ℹ️  Install with: pip install ai-edge-litert")
+                return None
 
     interpreter.allocate_tensors()
     return interpreter
