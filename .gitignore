@@ -18,6 +18,9 @@ apps/web/dist/
 # ML Models (regenerated on deploy)
 *.pkl
 
+# Old TensorFlow .h5 models (replaced by .tflite)
+*.h5
+
 # SQLite DB (regenerated on deploy)
 latest_model/smartcrop.db
 

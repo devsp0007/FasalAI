@@ -1,2 +1,2 @@
-*.h5 filter=lfs diff=lfs merge=lfs -text
-datasets/India[[:space:]]Agriculture[[:space:]]Crop[[:space:]]Production.csv filter=lfs diff=lfs merge=lfs -text
+*.tflite filter=lfs diff=lfs merge=lfs -text
+datasets/India Agriculture Crop Production.csv filter=lfs diff=lfs merge=lfs -text

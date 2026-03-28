@@ -1,8 +1,9 @@
 """
-Disease Detection Service — Loads .h5 TensorFlow models and JSON treatment data.
+Disease Detection Service — Uses .tflite models (lightweight, no TensorFlow needed).
 
 Supports 4 crops: Potato, Corn, Rice, Sugarcane
-Each has a .h5 Keras model + .json treatment solutions.
+Each has a .tflite model + .json treatment solutions.
+RAM usage: ~30MB total vs ~500MB with full TensorFlow.
 """
 
 import os
@@ -16,31 +17,31 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DISEASE_MODEL_DIR = PROJECT_ROOT / "latest_model" / "disease"
 
 # Global disease model data
-_disease_models = {}
+_disease_interpreters = {}
 _disease_solutions = {}
 
 # Supported crops and their model files
 DISEASE_CROPS = {
     "potato": {
-        "model_file": "potato.h5",
+        "model_file": "potato.tflite",
         "solution_file": "potato.json",
         "display_name": "Potato",
         "classes": ["Potato___Early_Blight", "Potato___Healthy", "Potato___Late_Blight"],
     },
     "corn": {
-        "model_file": "corn.h5",
+        "model_file": "corn.tflite",
         "solution_file": "corn.json",
         "display_name": "Corn / Maize",
         "classes": ["Corn___Common_Rust", "Corn___Gray_Leaf_Spot", "Corn___Healthy", "Corn___Northern_Leaf_Blight"],
     },
     "rice": {
-        "model_file": "rice.h5",
+        "model_file": "rice.tflite",
         "solution_file": "rice.json",
         "display_name": "Rice",
         "classes": ["Rice___Brown_Spot", "Rice___Healthy", "Rice___Leaf_Blast", "Rice___Neck_Blast"],
     },
     "sugarcane": {
-        "model_file": "sugarcane.h5",
+        "model_file": "sugarcane.tflite",
         "solution_file": "sugar_cane.json",
         "display_name": "Sugarcane",
         "classes": ["Sugarcane___Bacterial_Blight", "Sugarcane___Healthy", "Sugarcane___Red_Rot"],
@@ -55,9 +56,29 @@ DEFAULT_TREATMENT = {
 }
 
 
+def _load_tflite_model(model_path):
+    """Load a TFLite model using tflite-runtime or tf.lite as fallback."""
+    try:
+        # Try lightweight tflite-runtime first (~5MB)
+        from tflite_runtime.interpreter import Interpreter
+        interpreter = Interpreter(model_path=str(model_path))
+    except ImportError:
+        try:
+            # Fallback to full TensorFlow if available (local dev)
+            import tensorflow as tf
+            interpreter = tf.lite.Interpreter(model_path=str(model_path))
+        except ImportError:
+            print("  ⚠️  Neither tflite-runtime nor tensorflow is installed!")
+            print("  ℹ️  Install with: pip install tflite-runtime")
+            return None
+
+    interpreter.allocate_tensors()
+    return interpreter
+
+
 def load_disease_models():
-    """Load all disease detection .h5 models and .json solutions at startup."""
-    global _disease_models, _disease_solutions
+    """Load all disease detection .tflite models and .json solutions at startup."""
+    global _disease_interpreters, _disease_solutions
 
     print(f"🔬 Loading disease detection models from: {DISEASE_MODEL_DIR}")
 
@@ -65,26 +86,19 @@ def load_disease_models():
         print(f"  ⚠️  Disease model directory not found: {DISEASE_MODEL_DIR}")
         return
 
-    # Import tensorflow lazily to avoid startup crash if not installed
-    try:
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TF info/warning logs
-        import tensorflow as tf
-        print(f"  TensorFlow version: {tf.__version__}")
-    except ImportError:
-        print("  ⚠️  TensorFlow not installed. Disease detection will not work.")
-        print("  ℹ️  Install with: pip install tensorflow")
-        return
-
     for crop_key, config in DISEASE_CROPS.items():
         model_path = DISEASE_MODEL_DIR / config["model_file"]
         solution_path = DISEASE_MODEL_DIR / config["solution_file"]
 
-        # Load Keras model
+        # Load TFLite model
         try:
             if model_path.exists():
-                model = tf.keras.models.load_model(str(model_path), compile=False)
-                _disease_models[crop_key] = model
-                print(f"  ✅ {config['display_name']} model loaded (input: {model.input_shape})")
+                interpreter = _load_tflite_model(model_path)
+                if interpreter:
+                    _disease_interpreters[crop_key] = interpreter
+                    input_details = interpreter.get_input_details()
+                    shape = input_details[0]['shape']
+                    print(f"  ✅ {config['display_name']} model loaded (input: {shape})")
             else:
                 print(f"  ⚠️  {config['display_name']} model not found: {model_path}")
         except Exception as e:
@@ -101,7 +115,7 @@ def load_disease_models():
         except Exception as e:
             print(f"  ❌ Failed to load {config['display_name']} solutions: {e}")
 
-    loaded = len(_disease_models)
+    loaded = len(_disease_interpreters)
     print(f"🔬 Disease models loaded: {loaded}/{len(DISEASE_CROPS)}")
 
 
@@ -112,7 +126,7 @@ def get_supported_disease_crops() -> list[dict]:
         result.append({
             "key": crop_key,
             "name": config["display_name"],
-            "available": crop_key in _disease_models,
+            "available": crop_key in _disease_interpreters,
             "diseases": [c.replace("___", " — ").replace("_", " ") for c in config["classes"]],
         })
     return result
@@ -120,7 +134,7 @@ def get_supported_disease_crops() -> list[dict]:
 
 def detect_disease(crop: str, image_bytes: bytes) -> dict:
     """
-    Detect disease from a leaf image.
+    Detect disease from a leaf image using TFLite interpreter.
 
     Args:
         crop: One of 'potato', 'corn', 'rice', 'sugarcane'
@@ -137,28 +151,26 @@ def detect_disease(crop: str, image_bytes: bytes) -> dict:
             "error": f"Unsupported crop: {crop}. Supported: {list(DISEASE_CROPS.keys())}",
         }
 
-    if crop_key not in _disease_models:
+    if crop_key not in _disease_interpreters:
         return {
             "success": False,
             "error": f"Disease model for {crop} is not loaded. It may not be available on this server.",
         }
 
     config = DISEASE_CROPS[crop_key]
-    model = _disease_models[crop_key]
+    interpreter = _disease_interpreters[crop_key]
     solutions = _disease_solutions.get(crop_key, {})
 
     try:
-        # Import PIL for image processing
         from PIL import Image
 
-        # Get model input shape
-        input_shape = model.input_shape
-        # input_shape is typically (None, height, width, channels)
-        if len(input_shape) == 4:
-            target_h = input_shape[1] or 224
-            target_w = input_shape[2] or 224
-        else:
-            target_h = target_w = 224
+        # Get model input shape from interpreter
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+        input_shape = input_details[0]['shape']  # e.g. [1, 256, 256, 3]
+
+        target_h = int(input_shape[1])
+        target_w = int(input_shape[2])
 
         # Load and preprocess image
         img = Image.open(BytesIO(image_bytes))
@@ -169,7 +181,9 @@ def detect_disease(crop: str, image_bytes: bytes) -> dict:
         img_array = np.expand_dims(img_array, axis=0)
 
         # Run inference
-        predictions = model.predict(img_array, verbose=0)
+        interpreter.set_tensor(input_details[0]['index'], img_array)
+        interpreter.invoke()
+        predictions = interpreter.get_tensor(output_details[0]['index'])
         pred_proba = predictions[0]
 
         # Get predicted class
