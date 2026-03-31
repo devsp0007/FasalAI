@@ -18,61 +18,69 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = PROJECT_ROOT / "latest_model"
 
-# Global model bundles (loaded once at startup)
+# Global model bundles (lazy-loaded on first use to save RAM)
 _crop_rec_bundle = None
 _yield_bundle = None
 _price_bundle = None
 
 
-def load_models():
-    """Load all 3 ML model bundles from disk. Call once at startup."""
-    global _crop_rec_bundle, _yield_bundle, _price_bundle
-
-    crop_rec_path = MODEL_DIR / "crop_recommendation_rf.pkl"
-    yield_path = MODEL_DIR / "crop_yield_xgboost.pkl"
-    price_path = MODEL_DIR / "crop_price_xgboost.pkl"
-
-    print(f"📂 Loading models from: {MODEL_DIR}")
-
-    # Load Crop Recommendation model
+def _ensure_crop_rec():
+    """Lazy-load crop recommendation model on first use."""
+    global _crop_rec_bundle
+    if _crop_rec_bundle is not None:
+        return
+    path = MODEL_DIR / "crop_recommendation_rf.pkl"
     try:
-        if crop_rec_path.exists():
-            _crop_rec_bundle = joblib.load(crop_rec_path)
-            version = _crop_rec_bundle.get("dataset_version", "unknown")
-            print(f"  ✅ Crop Recommendation model loaded ({len(_crop_rec_bundle['class_names'])} crops, version={version})")
-            if version == "v2_state_aware":
-                print(f"     States: {len(_crop_rec_bundle.get('states', []))} | Soil types: {len(_crop_rec_bundle.get('soil_types', []))}")
+        if path.exists():
+            _crop_rec_bundle = joblib.load(path)
+            print(f"  ✅ Crop Recommendation model loaded (lazy)")
         else:
-            print(f"  ⚠️  Crop Recommendation model not found at {crop_rec_path}")
+            print(f"  ⚠️  Crop Recommendation model not found")
     except Exception as e:
         print(f"  ❌ Failed to load Crop Recommendation model: {e}")
 
-    # Load Yield Prediction model
+
+def _ensure_yield():
+    """Lazy-load yield prediction model on first use."""
+    global _yield_bundle
+    if _yield_bundle is not None:
+        return
+    path = MODEL_DIR / "crop_yield_xgboost.pkl"
     try:
-        if yield_path.exists():
-            _yield_bundle = joblib.load(yield_path)
-            print(f"  ✅ Yield Prediction model loaded")
+        if path.exists():
+            _yield_bundle = joblib.load(path)
+            print(f"  ✅ Yield Prediction model loaded (lazy)")
         else:
-            print(f"  ⚠️  Yield Prediction model not found at {yield_path}")
+            print(f"  ⚠️  Yield Prediction model not found")
     except Exception as e:
         print(f"  ❌ Failed to load Yield Prediction model: {e}")
 
-    # Load Price Prediction model
+
+def _ensure_price():
+    """Lazy-load price prediction model on first use."""
+    global _price_bundle
+    if _price_bundle is not None:
+        return
+    path = MODEL_DIR / "crop_price_xgboost.pkl"
     try:
-        if price_path.exists():
-            _price_bundle = joblib.load(price_path)
-            print(f"  ✅ Price Prediction model loaded")
+        if path.exists():
+            _price_bundle = joblib.load(path)
+            print(f"  ✅ Price Prediction model loaded (lazy)")
         else:
-            print(f"  ⚠️  Price Prediction model not found at {price_path}")
+            print(f"  ⚠️  Price Prediction model not found")
     except Exception as e:
-        print(f"  ⚠️  Price model failed to load (version mismatch, using mock): {e}")
+        print(f"  ⚠️  Price model failed to load: {e}")
         _price_bundle = None
 
-    print("🚀 Model loading complete!")
+
+def load_models():
+    """Legacy: kept for compatibility. Models now lazy-load automatically."""
+    print(f"📂 Models will lazy-load from: {MODEL_DIR}")
 
 
 def get_crop_list():
     """Return list of crops the recommendation model knows about."""
+    _ensure_crop_rec()
     if _crop_rec_bundle is None:
         return []
     return _crop_rec_bundle.get("class_names", [])
@@ -80,6 +88,7 @@ def get_crop_list():
 
 def get_state_list():
     """Return list of states supported by the recommendation model."""
+    _ensure_crop_rec()
     if _crop_rec_bundle is None:
         return []
     return _crop_rec_bundle.get("states", [])
@@ -87,6 +96,7 @@ def get_state_list():
 
 def get_soil_types():
     """Return list of soil types supported by the recommendation model."""
+    _ensure_crop_rec()
     if _crop_rec_bundle is None:
         return []
     return _crop_rec_bundle.get("soil_types", [])
@@ -94,6 +104,7 @@ def get_soil_types():
 
 def get_state_crops(state: str) -> list[str]:
     """Return list of crops commonly grown in the given state (from dataset)."""
+    _ensure_crop_rec()
     if _crop_rec_bundle is None:
         return []
     state_crops_map = _crop_rec_bundle.get("state_crops_map", {})
@@ -102,6 +113,7 @@ def get_state_crops(state: str) -> list[str]:
 
 def get_dataset_version():
     """Return the dataset version used for training."""
+    _ensure_crop_rec()
     if _crop_rec_bundle is None:
         return "unknown"
     return _crop_rec_bundle.get("dataset_version", "unknown")
@@ -109,6 +121,7 @@ def get_dataset_version():
 
 def get_yield_metadata():
     """Return metadata about what the yield model supports."""
+    _ensure_yield()
     if _yield_bundle is None:
         return {}
     return {
@@ -120,6 +133,7 @@ def get_yield_metadata():
 
 def get_price_metadata():
     """Return metadata about what the price model supports."""
+    _ensure_price()
     if _price_bundle is None:
         return {"note": "Using mock predictions (model version mismatch)"}
     return {
@@ -137,6 +151,7 @@ def recommend_crop(nitrogen: float, phosphorus: float, potassium: float,
     Returns list of top-K crops with scores.
     Supports state-aware (v2) and legacy (v1) models.
     """
+    _ensure_crop_rec()
     if _crop_rec_bundle is None:
         raise RuntimeError("Crop recommendation model not loaded")
 
@@ -264,6 +279,7 @@ def predict_yield(state: str, district: str, crop: str,
     """
     Predict crop yield in Tonnes/Hectare.
     """
+    _ensure_yield()
     if _yield_bundle is None:
         raise RuntimeError("Yield prediction model not loaded")
 
@@ -300,6 +316,7 @@ def predict_price(state: str, district: str, market: str,
     Predict modal price in Rs./Quintal.
     Falls back to smart mock if model is unavailable.
     """
+    _ensure_price()
     price_spread = max_price - min_price
 
     if _price_bundle is not None:

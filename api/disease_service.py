@@ -3,7 +3,7 @@ Disease Detection Service — Uses .tflite models (lightweight, no TensorFlow ne
 
 Supports 4 crops: Potato, Corn, Rice, Sugarcane
 Each has a .tflite model + .json treatment solutions.
-RAM usage: ~30MB total vs ~500MB with full TensorFlow.
+Models are LAZY-LOADED per-crop on first request to minimise RAM usage.
 """
 
 import os
@@ -16,9 +16,10 @@ from io import BytesIO
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DISEASE_MODEL_DIR = PROJECT_ROOT / "latest_model" / "disease"
 
-# Global disease model data
+# Global disease model data (lazy-loaded per crop)
 _disease_interpreters = {}
 _disease_solutions = {}
+_disease_load_attempted = set()  # tracks which crops we already tried to load
 
 # Supported crops and their model files
 DISEASE_CROPS = {
@@ -81,57 +82,63 @@ def _load_tflite_model(model_path):
     return interpreter
 
 
-def load_disease_models():
-    """Load all disease detection .tflite models and .json solutions at startup."""
-    global _disease_interpreters, _disease_solutions
+def _ensure_disease_model(crop_key: str):
+    """Lazy-load a single crop's disease model + solutions on first use."""
+    if crop_key in _disease_interpreters or crop_key in _disease_load_attempted:
+        return  # already loaded or already failed
+    _disease_load_attempted.add(crop_key)
 
-    print(f"🔬 Loading disease detection models from: {DISEASE_MODEL_DIR}")
+    config = DISEASE_CROPS.get(crop_key)
+    if not config:
+        return
 
     if not DISEASE_MODEL_DIR.exists():
         print(f"  ⚠️  Disease model directory not found: {DISEASE_MODEL_DIR}")
         return
 
-    for crop_key, config in DISEASE_CROPS.items():
-        model_path = DISEASE_MODEL_DIR / config["model_file"]
-        solution_path = DISEASE_MODEL_DIR / config["solution_file"]
+    model_path = DISEASE_MODEL_DIR / config["model_file"]
+    solution_path = DISEASE_MODEL_DIR / config["solution_file"]
 
-        # Load TFLite model
-        try:
-            if model_path.exists():
-                interpreter = _load_tflite_model(model_path)
-                if interpreter:
-                    _disease_interpreters[crop_key] = interpreter
-                    input_details = interpreter.get_input_details()
-                    shape = input_details[0]['shape']
-                    print(f"  ✅ {config['display_name']} model loaded (input: {shape})")
-            else:
-                print(f"  ⚠️  {config['display_name']} model not found: {model_path}")
-        except Exception as e:
-            print(f"  ❌ Failed to load {config['display_name']} model: {e}")
+    # Load TFLite model
+    try:
+        if model_path.exists():
+            interpreter = _load_tflite_model(model_path)
+            if interpreter:
+                _disease_interpreters[crop_key] = interpreter
+                input_details = interpreter.get_input_details()
+                shape = input_details[0]['shape']
+                print(f"  ✅ {config['display_name']} disease model loaded (lazy, input: {shape})")
+        else:
+            print(f"  ⚠️  {config['display_name']} model not found: {model_path}")
+    except Exception as e:
+        print(f"  ❌ Failed to load {config['display_name']} model: {e}")
 
-        # Load solutions JSON
-        try:
-            if solution_path.exists():
-                with open(solution_path, "r") as f:
-                    _disease_solutions[crop_key] = json.load(f)
-                print(f"  ✅ {config['display_name']} solutions loaded ({len(_disease_solutions[crop_key])} entries)")
-            else:
-                print(f"  ⚠️  {config['display_name']} solution file not found: {solution_path}")
-        except Exception as e:
-            print(f"  ❌ Failed to load {config['display_name']} solutions: {e}")
+    # Load solutions JSON
+    try:
+        if solution_path.exists():
+            with open(solution_path, "r") as f:
+                _disease_solutions[crop_key] = json.load(f)
+            print(f"  ✅ {config['display_name']} solutions loaded ({len(_disease_solutions[crop_key])} entries)")
+        else:
+            print(f"  ⚠️  {config['display_name']} solution file not found: {solution_path}")
+    except Exception as e:
+        print(f"  ❌ Failed to load {config['display_name']} solutions: {e}")
 
-    loaded = len(_disease_interpreters)
-    print(f"🔬 Disease models loaded: {loaded}/{len(DISEASE_CROPS)}")
+
+def load_disease_models():
+    """Legacy: kept for compatibility. Disease models now lazy-load per-crop."""
+    print(f"🔬 Disease models will lazy-load from: {DISEASE_MODEL_DIR}")
 
 
 def get_supported_disease_crops() -> list[dict]:
-    """Return list of crops supported for disease detection."""
+    """Return list of crops supported for disease detection (checks file existence, not RAM)."""
     result = []
     for crop_key, config in DISEASE_CROPS.items():
+        model_path = DISEASE_MODEL_DIR / config["model_file"]
         result.append({
             "key": crop_key,
             "name": config["display_name"],
-            "available": crop_key in _disease_interpreters,
+            "available": model_path.exists(),
             "diseases": [c.replace("___", " — ").replace("_", " ") for c in config["classes"]],
         })
     return result
@@ -140,6 +147,7 @@ def get_supported_disease_crops() -> list[dict]:
 def detect_disease(crop: str, image_bytes: bytes) -> dict:
     """
     Detect disease from a leaf image using TFLite interpreter.
+    Model is lazy-loaded on first request for this crop.
 
     Args:
         crop: One of 'potato', 'corn', 'rice', 'sugarcane'
@@ -155,6 +163,9 @@ def detect_disease(crop: str, image_bytes: bytes) -> dict:
             "success": False,
             "error": f"Unsupported crop: {crop}. Supported: {list(DISEASE_CROPS.keys())}",
         }
+
+    # Lazy-load this crop's model
+    _ensure_disease_model(crop_key)
 
     if crop_key not in _disease_interpreters:
         return {

@@ -16,13 +16,12 @@ from routes import router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load ML models before the app starts serving requests."""
+    """Initialize DB only at startup. Models are lazy-loaded on first request."""
     print("=" * 60)
     print("  🌾 Smart Crop Advisory — Starting Server")
     print("=" * 60)
-    load_models()
-    load_disease_models()
     init_auth_db()
+    print("  ℹ️  Models will be lazy-loaded on first request (saves RAM)")
     print("=" * 60)
     yield
     print("👋 Shutting down...")
