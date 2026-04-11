@@ -19,10 +19,14 @@ echo "Datasets:"
 ls -la datasets/
 wc -l datasets/*.csv 2>/dev/null || true
 
-echo "=== Retraining ML models ==="
-cd api
-python retrain_models.py
-cd ..
+if [ ! -f "latest_model/crop_recommendation_rf.pkl" ]; then
+    echo "=== Models missing: Retraining ML models ==="
+    cd api
+    python retrain_models.py
+    cd ..
+else
+    echo "=== Pre-trained ML models found in Git LFS, skipping retraining to save memory ==="
+fi
 
 echo "=== Build complete ==="
 echo "Models saved in latest_model/"
