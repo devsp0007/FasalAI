@@ -659,6 +659,9 @@ async def detect_location(request: Request, ip: Optional[str] = Query(default=No
         forwarded = request.headers.get("X-Forwarded-For", "")
         if forwarded:
             client_ip = forwarded.split(",")[0].strip()
+            # Azure adds port (e.g. "106.219.172.163:8584") — strip it
+            if ":" in client_ip and "." in client_ip:  # IPv4 with port, not IPv6
+                client_ip = client_ip.split(":")[0]
         else:
             client_ip = request.client.host if request.client else "8.8.8.8"
 
