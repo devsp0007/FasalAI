@@ -18,6 +18,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true  # Required: downloads ML model files (.pkl, .tflite) from Git LFS
 
       - name: Set up Python version
         uses: actions/setup-python@v5
@@ -40,6 +42,8 @@ jobs:
           path: |
             .
             !antenv/
+            !apps/
+            !.git/
 
       # 🚫 Opting Out of Oryx Build
       # If you prefer to disable the Oryx build process during deployment, follow these steps:
