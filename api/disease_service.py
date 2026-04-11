@@ -74,8 +74,8 @@ def _load_tflite_model(model_path):
                 import tensorflow as tf
                 interpreter = tf.lite.Interpreter(model_path=str(model_path))
             except ImportError:
-                print("  ⚠️  No TFLite runtime found!")
-                print("  ℹ️  Install with: pip install ai-edge-litert")
+                print("  [WARN] No TFLite runtime found!")
+                print("  INFO: Install with: pip install ai-edge-litert")
                 return None
 
     interpreter.allocate_tensors()
@@ -93,7 +93,7 @@ def _ensure_disease_model(crop_key: str):
         return
 
     if not DISEASE_MODEL_DIR.exists():
-        print(f"  ⚠️  Disease model directory not found: {DISEASE_MODEL_DIR}")
+        print(f"  [WARN] Disease model directory not found: {DISEASE_MODEL_DIR}")
         return
 
     model_path = DISEASE_MODEL_DIR / config["model_file"]
@@ -107,27 +107,27 @@ def _ensure_disease_model(crop_key: str):
                 _disease_interpreters[crop_key] = interpreter
                 input_details = interpreter.get_input_details()
                 shape = input_details[0]['shape']
-                print(f"  ✅ {config['display_name']} disease model loaded (lazy, input: {shape})")
+                print(f"  [OK] {config['display_name']} disease model loaded (lazy, input: {shape})")
         else:
-            print(f"  ⚠️  {config['display_name']} model not found: {model_path}")
+            print(f"  [WARN] {config['display_name']} model not found: {model_path}")
     except Exception as e:
-        print(f"  ❌ Failed to load {config['display_name']} model: {e}")
+        print(f"  [ERROR] Failed to load {config['display_name']} model: {e}")
 
     # Load solutions JSON
     try:
         if solution_path.exists():
             with open(solution_path, "r") as f:
                 _disease_solutions[crop_key] = json.load(f)
-            print(f"  ✅ {config['display_name']} solutions loaded ({len(_disease_solutions[crop_key])} entries)")
+            print(f"  [OK] {config['display_name']} solutions loaded ({len(_disease_solutions[crop_key])} entries)")
         else:
-            print(f"  ⚠️  {config['display_name']} solution file not found: {solution_path}")
+            print(f"  [WARN] {config['display_name']} solution file not found: {solution_path}")
     except Exception as e:
-        print(f"  ❌ Failed to load {config['display_name']} solutions: {e}")
+        print(f"  [ERROR] Failed to load {config['display_name']} solutions: {e}")
 
 
 def load_disease_models():
     """Legacy: kept for compatibility. Disease models now lazy-load per-crop."""
-    print(f"🔬 Disease models will lazy-load from: {DISEASE_MODEL_DIR}")
+    print(f"Disease models will lazy-load from: {DISEASE_MODEL_DIR}")
 
 
 def get_supported_disease_crops() -> list[dict]:

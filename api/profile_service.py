@@ -1,100 +1,72 @@
 """
-Profile Service — CRUD operations for user profiles stored in SQLite.
+Profile Service — CRUD operations for user profiles stored in Supabase.
 """
 
-import sqlite3
 import json
-import os
 from datetime import datetime
 
-DB_DIR = os.path.join(os.path.dirname(__file__), "..", "latest_model")
-DB_PATH = os.path.join(DB_DIR, "smartcrop.db")
-
-
-def _get_conn():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+from db import get_supabase
 
 
 def get_profile(user_id: int) -> dict | None:
     """Load a user's profile. Returns dict or None."""
-    conn = _get_conn()
-    try:
-        row = conn.execute(
-            "SELECT * FROM profiles WHERE user_id = ?", (user_id,)
-        ).fetchone()
-        if not row:
-            return None
+    sb = get_supabase()
+    result = sb.table("profiles").select("*").eq("user_id", user_id).execute()
 
-        profile = dict(row)
-        # Parse JSON fields
+    if not result.data or len(result.data) == 0:
+        return None
+
+    profile = result.data[0]
+
+    # Ensure JSON fields are proper Python types (Supabase returns jsonb natively)
+    if isinstance(profile.get("crops_grown"), str):
         try:
-            profile["crops_grown"] = json.loads(profile.get("crops_grown") or "[]")
+            profile["crops_grown"] = json.loads(profile["crops_grown"])
         except (json.JSONDecodeError, TypeError):
             profile["crops_grown"] = []
+
+    if isinstance(profile.get("notifications"), str):
         try:
-            profile["notifications"] = json.loads(profile.get("notifications") or "{}")
+            profile["notifications"] = json.loads(profile["notifications"])
         except (json.JSONDecodeError, TypeError):
             profile["notifications"] = {}
 
-        return profile
-    finally:
-        conn.close()
+    return profile
 
 
 def save_profile(user_id: int, data: dict) -> dict:
     """Save or update a user's profile. Returns the saved profile."""
-    conn = _get_conn()
-    try:
-        # Serialize JSON fields
-        crops_json = json.dumps(data.get("crops_grown", []))
-        notif_json = json.dumps(data.get("notifications", {}))
+    sb = get_supabase()
 
-        conn.execute("""
-            INSERT INTO profiles (user_id, name, district, state, language, role, farm_size, crops_grown, notifications, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(user_id) DO UPDATE SET
-                name = excluded.name,
-                district = excluded.district,
-                state = excluded.state,
-                language = excluded.language,
-                role = excluded.role,
-                farm_size = excluded.farm_size,
-                crops_grown = excluded.crops_grown,
-                notifications = excluded.notifications,
-                updated_at = excluded.updated_at
-        """, (
-            user_id,
-            data.get("name", ""),
-            data.get("district", ""),
-            data.get("state", ""),
-            data.get("language", "en"),
-            data.get("role", "farmer"),
-            data.get("farm_size"),
-            crops_json,
-            notif_json,
-            datetime.utcnow().isoformat(),
-        ))
-        conn.commit()
+    profile_data = {
+        "user_id": user_id,
+        "name": data.get("name", ""),
+        "district": data.get("district", ""),
+        "state": data.get("state", ""),
+        "language": data.get("language", "en"),
+        "role": data.get("role", "farmer"),
+        "farm_size": data.get("farm_size"),
+        "crops_grown": data.get("crops_grown", []),
+        "notifications": data.get("notifications", {}),
+        "email": data.get("email", ""),
+        "latitude": data.get("latitude"),
+        "longitude": data.get("longitude"),
+        "updated_at": datetime.utcnow().isoformat(),
+    }
 
-        # Also update the name in the users table
-        if data.get("name"):
-            conn.execute("UPDATE users SET name = ? WHERE id = ?", (data["name"], user_id))
-            conn.commit()
+    # Upsert — insert or update if user_id already exists
+    sb.table("profiles").upsert(profile_data, on_conflict="user_id").execute()
 
-        return get_profile(user_id)
-    finally:
-        conn.close()
+    # Also update the name in the users table
+    if data.get("name"):
+        sb.table("users").update({"name": data["name"]}).eq("id", user_id).execute()
+
+    return get_profile(user_id)
 
 
 def delete_profile(user_id: int) -> bool:
     """Delete a user's profile and account."""
-    conn = _get_conn()
-    try:
-        conn.execute("DELETE FROM profiles WHERE user_id = ?", (user_id,))
-        conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
-        conn.commit()
-        return True
-    finally:
-        conn.close()
+    sb = get_supabase()
+    sb.table("profiles").delete().eq("user_id", user_id).execute()
+    sb.table("users").delete().eq("id", user_id).execute()
+    return True

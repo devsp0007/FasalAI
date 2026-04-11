@@ -15,17 +15,14 @@ node_modules/
 apps/web/dist/
 .cache/
 
-# ML Models (regenerated on deploy)
-*.pkl
-
-# Old TensorFlow .h5 models (replaced by .tflite)
+# ML Models (tracked via Git LFS now, EXCEPT .h5)
+# old TensorFlow .h5 models are excluded because they are too large and replaced by .tflite.
 *.h5
 
 # SQLite DB (regenerated on deploy)
 latest_model/smartcrop.db
 
-# Data (exclude very large files, keep required training data)
-datasets/agmarknet_india_historical_prices_*.csv
+# Data (tracked via Git LFS now)
 
 # IDE
 .vscode/
@@ -48,3 +45,6 @@ desktop.ini
 
 # Changes folder (dev only)
 changes_new/
+
+# Old SQLite-era files (pre-Supabase migration)
+old_sqlite/

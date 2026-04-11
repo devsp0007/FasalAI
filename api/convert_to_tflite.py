@@ -12,7 +12,7 @@ for m in models:
     tflite_path = os.path.join(MODEL_DIR, m.replace(".h5", ".tflite"))
     
     if not os.path.exists(h5_path):
-        print(f"  ⚠️  {m} not found, skipping")
+        print(f"  [WARN] {m} not found, skipping")
         continue
     
     print(f"Converting {m}...")
@@ -28,6 +28,6 @@ for m in models:
     
     h5_size = os.path.getsize(h5_path) / (1024*1024)
     tflite_size = len(tflite_model) / (1024*1024)
-    print(f"  ✅ {m}: {h5_size:.1f} MB → {tflite_path}: {tflite_size:.1f} MB ({(1-tflite_size/h5_size)*100:.0f}% smaller)")
+    print(f"  [OK] {m}: {h5_size:.1f} MB -> {tflite_path}: {tflite_size:.1f} MB ({(1-tflite_size/h5_size)*100:.0f}% smaller)")
 
 print("\nDone! You can now remove .h5 files and use tflite-runtime instead of tensorflow.")

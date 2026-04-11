@@ -7,5 +7,5 @@ from disease_service import load_disease_models, get_supported_disease_crops
 load_disease_models()
 crops = get_supported_disease_crops()
 for c in crops:
-    print(f"  {c['name']}: {'✅ loaded' if c['available'] else '❌ not loaded'}")
+    print(f"  {c['name']}: {'[OK] loaded' if c['available'] else '[X] not loaded'}")
 print("\nDone!")

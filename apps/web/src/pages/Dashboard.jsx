@@ -2,21 +2,49 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getWeather, getMarketPrices, healthCheck } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useLocation } from '../contexts/LocationContext'
 
 export default function Dashboard() {
   const [weather, setWeather] = useState(null)
   const [prices, setPrices] = useState(null)
   const [status, setStatus] = useState(null)
+  const [weatherAlerts, setWeatherAlerts] = useState([])
   const { t } = useLanguage()
+  const { latitude, longitude, city, state: locState } = useLocation()
 
   useEffect(() => {
     healthCheck().then(setStatus).catch(() => setStatus({ status: 'offline' }))
-    getWeather(25.3176, 82.9739).then(setWeather).catch(console.error)
-    getMarketPrices('wheat', 'Varanasi', 7).then(setPrices).catch(console.error)
   }, [])
+
+  useEffect(() => {
+    const lat = latitude || 25.3176
+    const lon = longitude || 82.9739
+    getWeather(lat, lon).then(data => {
+      setWeather(data)
+      setWeatherAlerts(data?.alerts || [])
+    }).catch(console.error)
+    const commodity = 'Wheat'
+    const st = locState || ''
+    getMarketPrices(commodity, st, '', '', 30).then(setPrices).catch(console.error)
+  }, [latitude, longitude, locState])
 
   return (
     <div className="animate-fade-in">
+      {/* Weather Alert Banner */}
+      {weatherAlerts.length > 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, #E65100, #F57C00)', color: 'white',
+          padding: '0.85rem 1.25rem', borderRadius: '12px', marginBottom: 'var(--sp-4)',
+          display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem',
+          boxShadow: '0 2px 8px rgba(230,81,0,0.3)', animation: 'fadeIn 0.3s'
+        }}>
+          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+          <div>
+            <strong>{t('dash_weatherAlert') || 'Weather Alert'}:</strong>{' '}
+            {weatherAlerts[0].message}
+          </div>
+        </div>
+      )}
       {/* Welcome banner */}
       <div className="card" style={{ background: 'linear-gradient(135deg, #1B5E20, #2E7D32, #43A047)', color: 'white', marginBottom: 'var(--sp-6)' }}>
         <div className="card-body" style={{ padding: 'var(--sp-8)' }}>
@@ -75,8 +103,8 @@ export default function Dashboard() {
           <div className="stat-info">
             <div className="stat-label">{t('dash_latestPrice')}</div>
             <div className="stat-value">₹{prices?.latest_price?.toLocaleString() || '...'}</div>
-            <div className={`stat-change ${prices?.trend === 'rising' ? 'up' : 'down'}`}>
-              {prices ? `${prices.trend_pct > 0 ? '↑' : '↓'} ${Math.abs(prices.trend_pct)}% ${prices.trend}` : '...'}
+            <div className={`stat-change ${prices?.trend === 'up' ? 'up' : 'down'}`}>
+              {prices ? `${prices.trend === 'up' ? '↑' : '↓'} ${prices.trend}` : '...'}
             </div>
           </div>
         </div>
@@ -87,7 +115,10 @@ export default function Dashboard() {
         <div className="card animate-fade-in-up stagger-2">
           <div className="card-header">
             <h3>{t('dash_weatherForecast')}</h3>
-            <span className="badge badge-blue">Varanasi</span>
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+              <span className="badge badge-blue">{city || locState || 'Your Area'}</span>
+              {weather?.source === 'openweathermap' && <span className="badge badge-green" style={{ fontSize: '0.6rem' }}>Live</span>}
+            </div>
           </div>
           <div className="card-body">
             {weather ? (

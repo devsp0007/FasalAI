@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { recommendCrop, getStates, getCropsByState } from '../services/api'
+import { recommendCrop, getStates, getCropsByState, getWeather } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useLocation } from '../contexts/LocationContext'
 
 const PRESETS = {
   rice_kharif: { nitrogen: 80, phosphorus: 48, potassium: 40, temperature: 27, humidity: 80, ph: 6.5, rainfall: 250, season: 'kharif', label: 'Rice Belt (Kharif)' },
@@ -20,11 +21,13 @@ export default function Recommend() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const { t } = useLanguage()
+  const { state: detectedState, latitude, longitude } = useLocation()
 
   // State-based pre-recommendations
   const [states, setStates] = useState([])
   const [stateCrops, setStateCrops] = useState(null)
   const [stateLoading, setStateLoading] = useState(false)
+  const [weatherLoading, setWeatherLoading] = useState(false)
 
   // Load states on mount
   useEffect(() => {
@@ -32,6 +35,33 @@ export default function Recommend() {
       .then(data => setStates(data.states || []))
       .catch(() => setStates([]))
   }, [])
+
+  // Auto-fill state from detected location
+  useEffect(() => {
+    if (detectedState && !form.state) {
+      setForm(prev => ({ ...prev, state: detectedState }))
+    }
+  }, [detectedState])
+
+  // Fetch real weather and fill form
+  async function fillCurrentWeather() {
+    const lat = latitude || 25.3176
+    const lon = longitude || 82.9739
+    setWeatherLoading(true)
+    try {
+      const data = await getWeather(lat, lon)
+      const current = data?.current || {}
+      if (current.temperature) {
+        setForm(prev => ({
+          ...prev,
+          temperature: Math.round(current.temperature * 10) / 10,
+          humidity: current.humidity || prev.humidity,
+          rainfall: current.rain_1h ? current.rain_1h * 24 * 30 : prev.rainfall, // Estimate monthly
+        }))
+      }
+    } catch (err) { console.error(err) }
+    setWeatherLoading(false)
+  }
 
   // Fetch state-based crop recommendations when state changes
   useEffect(() => {

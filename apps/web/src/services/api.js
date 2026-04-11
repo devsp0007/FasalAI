@@ -55,6 +55,13 @@ export async function loginUser(data) {
   });
 }
 
+export async function googleLogin(accessToken) {
+  return apiCall('/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ access_token: accessToken }),
+  });
+}
+
 // ── Profile ───────────────────────────────────────────
 
 export async function getProfile() {
@@ -70,6 +77,34 @@ export async function saveProfile(data) {
 
 export async function deleteProfile() {
   return apiCall('/profile', { method: 'DELETE' });
+}
+
+// ── Fields ────────────────────────────────────────────
+
+export async function getFields() {
+  return apiCall('/fields');
+}
+
+export async function getFieldById(fieldId) {
+  return apiCall(`/fields/${fieldId}`);
+}
+
+export async function createField(data) {
+  return apiCall('/fields', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateField(fieldId, data) {
+  return apiCall(`/fields/${fieldId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteFieldById(fieldId) {
+  return apiCall(`/fields/${fieldId}`, { method: 'DELETE' });
 }
 
 // ── Health ────────────────────────────────────────────
@@ -109,8 +144,36 @@ export async function getWeather(lat, lon) {
   return apiCall(`/weather/${lat}/${lon}`);
 }
 
-export async function getMarketPrices(crop = 'wheat', district = 'Varanasi', days = 30) {
-  return apiCall(`/market/prices?crop=${crop}&district=${district}&days=${days}`);
+export async function getMarketPrices(commodity = 'Wheat', state = '', district = '', market = '', days = 90) {
+  const params = new URLSearchParams({ commodity, state, district, market, days: String(days) });
+  return apiCall(`/market/prices?${params}`);
+}
+
+// ── Location Detection ────────────────────────────────
+
+export async function detectLocation(ip = '') {
+  const params = ip ? `?ip=${ip}` : '';
+  return apiCall(`/location/detect${params}`);
+}
+
+// ── Weather Alerts ────────────────────────────────────
+
+export async function getWeatherAlerts(lat, lon, days = 2) {
+  return apiCall(`/weather/alerts/${lat}/${lon}?days=${days}`);
+}
+
+export async function getMyAlerts(limit = 10) {
+  return apiCall(`/alerts/my-alerts?limit=${limit}`);
+}
+
+// ── Market Metadata & Commodities ─────────────────────
+
+export async function getMarketMetadata() {
+  return apiCall('/market/metadata');
+}
+
+export async function getMarketCommodities(state = '', district = '') {
+  return apiCall(`/market/commodities?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}`);
 }
 
 // ── State-Aware Endpoints ─────────────────────────────
@@ -142,3 +205,145 @@ export async function detectDisease(crop, imageFile) {
     body: formData,
   });
 }
+
+// ── Recommendation History ────────────────────────────
+
+export async function getRecommendationHistory(limit = 20) {
+  return apiCall(`/recommendations/history?limit=${limit}`);
+}
+
+export async function deleteRecommendationHistory(recordId) {
+  return apiCall(`/recommendations/history/${recordId}`, { method: 'DELETE' });
+}
+
+// ── Disease Scan History ──────────────────────────────
+
+export async function getDiseaseHistory(limit = 20) {
+  return apiCall(`/disease/history?limit=${limit}`);
+}
+
+export async function deleteDiseaseHistory(scanId) {
+  return apiCall(`/disease/history/${scanId}`, { method: 'DELETE' });
+}
+
+// ── Crop Plans (Rotation Planner) ─────────────────────
+
+export async function getCropPlans(year = null, grouped = true) {
+  let url = `/plans?grouped=${grouped}`;
+  if (year) url += `&year=${year}`;
+  return apiCall(url);
+}
+
+export async function createCropPlan(data) {
+  return apiCall('/plans', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateCropPlan(planId, data) {
+  return apiCall(`/plans/${planId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteCropPlan(planId) {
+  return apiCall(`/plans/${planId}`, { method: 'DELETE' });
+}
+
+// ── Pest Alerts ───────────────────────────────────────
+
+export async function getPestAlerts(state, season = '') {
+  return apiCall(`/pests/alerts?state=${encodeURIComponent(state)}&season=${season}`);
+}
+
+export async function getPestForCrop(cropKey) {
+  return apiCall(`/pests/crop/${encodeURIComponent(cropKey)}`);
+}
+
+export async function getSeasonInfo() {
+  return apiCall('/pests/season');
+}
+
+export async function getPestStates() {
+  return apiCall('/pests/states');
+}
+
+// ── Fertilizer ────────────────────────────────────────
+
+export async function recommendFertilizer(data) {
+  return apiCall('/fertilizer/recommend', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getOrganicRemedies(data) {
+  return apiCall('/fertilizer/organic', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getFertilizerMetadata() {
+  return apiCall('/fertilizer/metadata');
+}
+
+// ── Community Chat ────────────────────────────────────
+
+export async function getCommunityMessages(limit = 50, before = null) {
+  let url = `/community/messages?limit=${limit}`;
+  if (before) url += `&before=${before}`;
+  return apiCall(url);
+}
+
+export async function sendCommunityMessage(message) {
+  return apiCall('/community/messages', {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  });
+}
+
+export async function getOnlineCount() {
+  return apiCall('/community/online');
+}
+
+// ── Default Export ────────────────────────────────────
+
+const api = {
+  // Auth
+  registerUser, loginUser, googleLogin,
+  // Profile
+  getProfile, saveProfile, deleteProfile,
+  // Fields
+  getFields, getFieldById, createField, updateField, deleteFieldById,
+  // Health
+  healthCheck,
+  // ML
+  recommendCrop, predictYield, predictPrice, getCrops,
+  // Location
+  detectLocation,
+  // Weather
+  getWeather, getWeatherAlerts, getMyAlerts,
+  // Market
+  getMarketPrices, getMarketMetadata, getMarketCommodities,
+  // States
+  getStates, getCropsByState, getSoilTypes,
+  // Disease
+  getDiseaseCrops, detectDisease,
+  // History
+  getRecommendationHistory, deleteRecommendationHistory,
+  getDiseaseHistory, deleteDiseaseHistory,
+  // Plans
+  getCropPlans, createCropPlan, updateCropPlan, deleteCropPlan,
+  // Pests
+  getPestAlerts, getPestForCrop, getSeasonInfo, getPestStates,
+  // Fertilizer
+  recommendFertilizer, getOrganicRemedies, getFertilizerMetadata,
+  // Community
+  getCommunityMessages, sendCommunityMessage, getOnlineCount,
+};
+
+export default api;
+

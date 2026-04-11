@@ -13,10 +13,12 @@ Built for **Smart India Hackathon 2025** (Problem Statement ID: SIH25010).
 | 🔬 **Disease Detection** | TensorFlow CNN (.h5) | Upload leaf images to detect diseases in Potato, Corn, Rice, Sugarcane |
 | 🌾 **Yield Prediction** | GradientBoosting | Predicts crop yield (T/Ha) by state, district, crop, and season |
 | 💰 **Price Forecasting** | GradientBoosting | Predicts modal mandi price (₹/Quintal) |
-| 👤 **Multi-User Auth** | SQLite + JWT + bcrypt | Register/login with phone+password, persistent profiles |
+| 👤 **Multi-User Auth** | Supabase (PostgreSQL) | Google OAuth SSO & Standard login, persistent profiles |
 | 📅 **Rotation Planner** | Rule-based | Visual calendar for crop rotation planning |
 | 🌐 **Multilingual** | 11 Languages | Hindi, Tamil, Telugu, Bengali, Marathi, and more |
 | 🤖 **AI Chatbot** | Gemini API | Voice-enabled agricultural chatbot |
+| 📱 **Mobile Optimized** | CSS3 + React | Fully responsive UI with animated bottom navigation drawer |
+| ⚡ **High Performance** | Pre-processed Datasets | Fast server startup with lightweight Agmarknet summary files |
 
 ## 🏗️ Architecture
 
@@ -27,27 +29,29 @@ SIH25010/
 │   ├── ml_service.py     # ML model loader & inference (state-aware)
 │   ├── scoring_engine.py # Constraint penalties & bonuses
 │   ├── disease_service.py# TensorFlow disease detection
-│   ├── auth_service.py   # JWT auth + bcrypt + SQLite
-│   ├── profile_service.py# User profile CRUD
+│   ├── auth_service.py   # JWT auth + Google OAuth + Supabase
+│   ├── profile_service.py# User profile CRUD via Supabase
 │   ├── routes.py         # All API endpoints
 │   └── retrain_models.py # Model retraining (runs on deploy)
 │
 ├── apps/web/             ← React + Vite frontend
 │   └── src/
-│       ├── index.css          # Design system
+│       ├── index.css          # Design system (Mobile responsive)
 │       ├── App.jsx            # Layout, auth, routing
 │       ├── contexts/
 │       │   ├── AuthContext.jsx    # Auth state management
 │       │   └── LanguageContext.jsx # i18n
-│       ├── services/api.js    # API client with JWT
+│       ├── services/api.js    # API client
 │       └── pages/             # Dashboard, Recommend, Disease,
 │                              # Market, Yield, Profile, Login, etc.
 │
 ├── datasets/             ← Training datasets
-├── latest_model/         ← Trained models + SQLite DB
+├── latest_model/         ← Trained models
 │   ├── *.pkl             # ML models (auto-generated)
-│   ├── disease/*.h5      # CNN disease models
-│   └── smartcrop.db      # User profiles (auto-created)
+│   └── disease/*.h5      # CNN disease models
+│
+├── MDs/                  ← Markdown Documentation
+│   └── deepnote_deployment_guide.md # Deepnote hosting guide
 │
 ├── render.yaml           ← Render Blueprint (one-click deploy)
 ├── render_build.sh       ← Render build script
@@ -111,19 +115,13 @@ Open **http://localhost:5173** → Register with phone & password → Start usin
 | `PYTHON_VERSION` | `3.10.12` |
 | `JWT_SECRET` | *(click Generate)* |
 | `SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL` | `True` |
+| `SUPABASE_URL` | *(your Supabase project URL)* |
+| `SUPABASE_ANON_KEY` | *(your Supabase anon key)* |
 
-6. **Disk** (Settings → Disks — **required for SQLite persistence**):
+6. Click **Deploy** → Wait for build (~5-10 min on first deploy)
+7. Your API will be at: `https://smartcrop-api.onrender.com`
 
-| Setting | Value |
-|---------|-------|
-| Name | `smartcrop-data` |
-| Mount Path | `/opt/render/project/src/latest_model` |
-| Size | 1 GB |
-
-> ⚠️ Without a disk, the SQLite database (user profiles) will be lost on every deploy.
-
-7. Click **Deploy** → Wait for build (~5-10 min on first deploy)
-8. Your API will be at: `https://smartcrop-api.onrender.com`
+> 💡 **Alternative Hosting**: See `MDs/deepnote_deployment_guide.md` or `MDs/azure_deployment_guide.md` for deploying the application on Microsoft Azure or Deepnote.
 
 ### Frontend — Vercel
 
@@ -144,6 +142,7 @@ Open **http://localhost:5173** → Register with phone & password → Start usin
 |-----|-------|
 | `VITE_API_URL` | `https://smartcrop-api.onrender.com/api` |
 | `VITE_GEMINI_API_KEY` | *(your Gemini API key)* |
+| `VITE_GOOGLE_CLIENT_ID` | *(your Google OAuth client ID)* |
 
 5. Click **Deploy**
 6. Your frontend will be at: `https://your-app.vercel.app`
@@ -182,12 +181,12 @@ Open **http://localhost:5173** → Register with phone & password → Start usin
 
 ## 🛠️ Tech Stack
 
-- **Backend**: FastAPI, scikit-learn, TensorFlow, pandas, SQLite, JWT, bcrypt
+- **Backend**: FastAPI, scikit-learn, TensorFlow, pandas, Supabase (PostgreSQL), JWT
 - **Frontend**: React 19, Vite 7, Recharts, React Router
 - **ML**: RandomForest, GradientBoosting, TensorFlow CNN
-- **Auth**: Phone + password, bcrypt hashing, JWT tokens
-- **Design**: Custom CSS design system, Inter font, agricultural green palette
-- **Deployment**: Render (backend) + Vercel (frontend)
+- **Auth**: Google OAuth, Standard login, JWT tokens
+- **Design**: Custom CSS design system, Inter font, agricultural green palette, Mobile-first
+- **Deployment**: Deepnote, Render (backend) + Vercel (frontend)
 
 ## 📄 License
 

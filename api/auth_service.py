@@ -1,61 +1,27 @@
 """
-Auth Service — SQLite-based user registration, login, and JWT management.
+Auth Service — Supabase-based user registration, login, and JWT management.
 """
 
 import os
-import sqlite3
 import bcrypt
 import jwt
-import json
 from datetime import datetime, timedelta
 
+from db import get_supabase
+
 # ── Configuration ─────────────────────────────────────
-DB_DIR = os.path.join(os.path.dirname(__file__), "..", "latest_model")
-DB_PATH = os.path.join(DB_DIR, "smartcrop.db")
 JWT_SECRET = os.environ.get("JWT_SECRET", "smartcrop-sih25010-secret-key-2026")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_DAYS = 30
 
 
-def _get_conn():
-    """Get a database connection with row_factory for dict-like access."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")  # Better concurrent access
-    return conn
-
-
 def init_db():
-    """Create database tables if they don't exist. Called at server startup."""
-    os.makedirs(DB_DIR, exist_ok=True)
-    conn = _get_conn()
-    try:
-        conn.executescript("""
-            CREATE TABLE IF NOT EXISTS users (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                phone       TEXT UNIQUE NOT NULL,
-                password    TEXT NOT NULL,
-                name        TEXT DEFAULT '',
-                created_at  TEXT DEFAULT CURRENT_TIMESTAMP
-            );
-
-            CREATE TABLE IF NOT EXISTS profiles (
-                user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-                name          TEXT DEFAULT '',
-                district      TEXT DEFAULT '',
-                state         TEXT DEFAULT '',
-                language      TEXT DEFAULT 'en',
-                role          TEXT DEFAULT 'farmer',
-                farm_size     REAL,
-                crops_grown   TEXT DEFAULT '[]',
-                notifications TEXT DEFAULT '{}',
-                updated_at    TEXT DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        conn.commit()
-        print("  ✅ SQLite database initialized")
-    finally:
-        conn.close()
+    """Verify Supabase connection at startup. Tables must already exist in Supabase."""
+    from db import check_connection
+    if check_connection():
+        print("  [OK] Supabase database connected")
+    else:
+        print("  [WARN] Supabase connection failed -- auth features will not work")
 
 
 def _generate_token(user_id: int, phone: str, name: str) -> str:
@@ -79,36 +45,40 @@ def register_user(phone: str, password: str, name: str = "") -> dict:
     if not phone or not password:
         raise ValueError("Phone and password are required")
 
+    sb = get_supabase()
+
+    # Check if phone already exists
+    existing = sb.table("users").select("id").eq("phone", phone).execute()
+    if existing.data and len(existing.data) > 0:
+        raise ValueError("A user with this phone number already exists")
+
     # Hash password
     hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-    conn = _get_conn()
-    try:
-        # Check if phone already exists
-        existing = conn.execute("SELECT id FROM users WHERE phone = ?", (phone,)).fetchone()
-        if existing:
-            raise ValueError("A user with this phone number already exists")
+    # Insert user
+    result = sb.table("users").insert({
+        "phone": phone,
+        "password": hashed,
+        "name": name.strip(),
+    }).execute()
 
-        cursor = conn.execute(
-            "INSERT INTO users (phone, password, name) VALUES (?, ?, ?)",
-            (phone, hashed, name.strip())
-        )
-        user_id = cursor.lastrowid
+    if not result.data or len(result.data) == 0:
+        raise ValueError("Failed to create user")
 
-        # Create empty profile for the user
-        conn.execute(
-            "INSERT INTO profiles (user_id, name) VALUES (?, ?)",
-            (user_id, name.strip())
-        )
-        conn.commit()
+    user = result.data[0]
+    user_id = user["id"]
 
-        token = _generate_token(user_id, phone, name)
-        return {
-            "token": token,
-            "user": {"id": user_id, "phone": phone, "name": name},
-        }
-    finally:
-        conn.close()
+    # Create empty profile for the user
+    sb.table("profiles").insert({
+        "user_id": user_id,
+        "name": name.strip(),
+    }).execute()
+
+    token = _generate_token(user_id, phone, name)
+    return {
+        "token": token,
+        "user": {"id": user_id, "phone": phone, "name": name},
+    }
 
 
 def login_user(phone: str, password: str) -> dict:
@@ -120,25 +90,23 @@ def login_user(phone: str, password: str) -> dict:
     if not phone or not password:
         raise ValueError("Phone and password are required")
 
-    conn = _get_conn()
-    try:
-        row = conn.execute(
-            "SELECT id, phone, password, name FROM users WHERE phone = ?", (phone,)
-        ).fetchone()
+    sb = get_supabase()
 
-        if not row:
-            raise ValueError("Invalid phone number or password")
+    result = sb.table("users").select("id, phone, password, name").eq("phone", phone).execute()
 
-        if not bcrypt.checkpw(password.encode("utf-8"), row["password"].encode("utf-8")):
-            raise ValueError("Invalid phone number or password")
+    if not result.data or len(result.data) == 0:
+        raise ValueError("Invalid phone number or password")
 
-        token = _generate_token(row["id"], row["phone"], row["name"])
-        return {
-            "token": token,
-            "user": {"id": row["id"], "phone": row["phone"], "name": row["name"]},
-        }
-    finally:
-        conn.close()
+    row = result.data[0]
+
+    if not bcrypt.checkpw(password.encode("utf-8"), row["password"].encode("utf-8")):
+        raise ValueError("Invalid phone number or password")
+
+    token = _generate_token(row["id"], row["phone"], row["name"])
+    return {
+        "token": token,
+        "user": {"id": row["id"], "phone": row["phone"], "name": row["name"]},
+    }
 
 
 def get_current_user(token: str) -> dict:
@@ -157,3 +125,89 @@ def get_current_user(token: str) -> dict:
         raise ValueError("Token has expired. Please login again.")
     except jwt.InvalidTokenError:
         raise ValueError("Invalid token. Please login again.")
+
+
+def google_login(access_token: str) -> dict:
+    """
+    Authenticate a user via Google OAuth using a Supabase access token.
+    1. Verify the token with Supabase to get user email & name
+    2. Find or create the user in our users table
+    3. Return our standard JWT token
+
+    Returns {"token": ..., "user": {...}}.
+    Raises ValueError if token is invalid.
+    """
+    sb = get_supabase()
+
+    # Verify the Supabase access token and get user info
+    try:
+        user_response = sb.auth.get_user(access_token)
+        if not user_response or not user_response.user:
+            raise ValueError("Invalid Google authentication token")
+    except Exception as e:
+        raise ValueError(f"Failed to verify Google token: {str(e)}")
+
+    supabase_user = user_response.user
+    email = supabase_user.email
+    name = ""
+
+    # Extract name from user metadata
+    if supabase_user.user_metadata:
+        name = supabase_user.user_metadata.get("full_name", "") or \
+               supabase_user.user_metadata.get("name", "")
+
+    if not email:
+        raise ValueError("Could not get email from Google account")
+
+    # Check if user already exists by email
+    existing = sb.table("users").select("id, phone, name, email, auth_provider").eq("email", email).execute()
+
+    if existing.data and len(existing.data) > 0:
+        # User exists — log them in
+        user = existing.data[0]
+        user_id = user["id"]
+        user_name = user["name"] or name
+        user_phone = user.get("phone", email)
+
+        # Update name if it was empty before
+        if not user["name"] and name:
+            sb.table("users").update({"name": name}).eq("id", user_id).execute()
+
+        token = _generate_token(user_id, user_phone, user_name)
+        return {
+            "token": token,
+            "user": {"id": user_id, "phone": user_phone, "name": user_name, "email": email},
+        }
+    else:
+        # New user — create account
+        # Generate a random password hash (user won't use it — they login via Google)
+        import secrets
+        random_pw = secrets.token_urlsafe(32)
+        hashed = bcrypt.hashpw(random_pw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+        result = sb.table("users").insert({
+            "phone": email,  # Use email as phone field for Google users
+            "email": email,
+            "password": hashed,
+            "name": name,
+            "auth_provider": "google",
+        }).execute()
+
+        if not result.data or len(result.data) == 0:
+            raise ValueError("Failed to create user account")
+
+        user = result.data[0]
+        user_id = user["id"]
+
+        # Create empty profile
+        sb.table("profiles").insert({
+            "user_id": user_id,
+            "name": name,
+        }).execute()
+
+        token = _generate_token(user_id, email, name)
+        return {
+            "token": token,
+            "user": {"id": user_id, "phone": email, "name": name, "email": email},
+        }
+

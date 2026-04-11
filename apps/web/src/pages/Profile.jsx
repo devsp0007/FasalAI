@@ -2,16 +2,19 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useLocation } from '../contexts/LocationContext'
 import { getProfile, saveProfile, deleteProfile } from '../services/api'
 
 export default function Profile() {
   const { t } = useLanguage()
   const { user, logout, updateUserName } = useAuth()
+  const { state: detectedState, latitude, longitude } = useLocation()
   const navigate = useNavigate()
 
   const [profile, setProfile] = useState({
     name: '',
     phone: '',
+    email: '',
     language: 'en',
     district: '',
     state: '',
@@ -42,9 +45,10 @@ export default function Profile() {
         setProfile({
           name: p.name || user?.name || '',
           phone: p.phone || user?.phone || '',
+          email: p.email || user?.email || '',
           language: p.language || 'en',
           district: p.district || '',
-          state: p.state || '',
+          state: p.state || detectedState || '',
           role: p.role || 'farmer',
           farm_size: p.farm_size || '',
           crops_grown: Array.isArray(p.crops_grown) ? p.crops_grown.join(', ') : '',
@@ -78,6 +82,7 @@ export default function Profile() {
     try {
       const payload = {
         name: profile.name,
+        email: profile.email,
         district: profile.district,
         state: profile.state,
         language: profile.language,
@@ -87,6 +92,8 @@ export default function Profile() {
           ? profile.crops_grown.split(',').map(c => c.trim()).filter(Boolean)
           : [],
         notifications,
+        latitude: latitude || null,
+        longitude: longitude || null,
       }
       await saveProfile(payload)
       updateUserName(profile.name)
@@ -164,6 +171,11 @@ export default function Profile() {
             <div className="form-group">
               <label className="form-label">{t('profile_phone')}</label>
               <input className="form-input" value={profile.phone} disabled style={{ opacity: 0.6 }} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email (for weather alerts)</label>
+              <input className="form-input" type="email" value={profile.email} onChange={e => setProfile(p => ({...p, email: e.target.value}))} placeholder="your@email.com" />
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>Required for email weather alerts via Brevo</span>
             </div>
             <div className="form-row">
               <div className="form-group">

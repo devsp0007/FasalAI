@@ -1,31 +1,44 @@
 import { useState, useEffect } from 'react'
-import { getMarketPrices, predictPrice } from '../services/api'
+import { getMarketPrices, predictPrice, getMarketMetadata } from '../services/api'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useLocation } from '../contexts/LocationContext'
 
 export default function Market() {
   const { t } = useLanguage()
-  const [crop, setCrop] = useState('wheat')
-  const [district, setDistrict] = useState('Varanasi')
-  const [days, setDays] = useState(30)
+  const { state: detectedState } = useLocation()
+  const [commodity, setCommodity] = useState('Wheat')
+  const [state, setState] = useState(detectedState || '')
+  const [days, setDays] = useState(90)
   const [priceData, setPriceData] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [metadata, setMetadata] = useState(null)
 
   // Price prediction form
   const [predForm, setPredForm] = useState({
-    state: 'Uttar Pradesh', district: 'Varanasi', market: 'Varanasi Mandi',
-    commodity: 'Wheat', variety: 'Dara', grade: 'FAQ',
+    state: detectedState || 'Uttar Pradesh', district: '', market: '',
+    commodity: 'Wheat', variety: 'Other', grade: 'FAQ',
     min_price: 2200, max_price: 2500, month: new Date().getMonth() + 1, year: 2026
   })
   const [prediction, setPrediction] = useState(null)
   const [predLoading, setPredLoading] = useState(false)
 
-  const crops = ['wheat', 'rice', 'maize', 'cotton', 'chickpea', 'lentil', 'banana', 'mango', 'potato', 'tomato', 'onion', 'sugarcane']
+  // Load market metadata (states, commodities)
+  useEffect(() => {
+    getMarketMetadata().then(d => setMetadata(d)).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (detectedState && !state) setState(detectedState)
+  }, [detectedState])
+
+  const commodities = metadata?.commodities || ['Wheat', 'Rice', 'Maize', 'Cotton', 'Onion', 'Potato', 'Tomato', 'Sugarcane']
+  const availableStates = metadata?.states ? Object.keys(metadata.states).sort() : []
 
   const fetchPrices = async () => {
     setLoading(true)
     try {
-      const data = await getMarketPrices(crop, district, days)
+      const data = await getMarketPrices(commodity, state, '', '', days)
       setPriceData(data)
     } catch (err) {
       console.error(err)
@@ -34,7 +47,7 @@ export default function Market() {
     }
   }
 
-  useEffect(() => { fetchPrices() }, [crop, district, days])
+  useEffect(() => { fetchPrices() }, [commodity, state, days])
 
   const handlePredict = async (e) => {
     e.preventDefault()
@@ -46,10 +59,10 @@ export default function Market() {
     finally { setPredLoading(false) }
   }
 
-  const chartData = priceData?.prices?.map(p => ({
-    date: p.date.slice(5),
-    price: p.price_per_quintal,
-  })) || []
+  const chartData = (priceData?.prices || []).map((p, i) => ({
+    date: p.date ? p.date.slice(5) : `#${i + 1}`,
+    price: p.price_per_quintal || 0,
+  })).filter(d => d.price > 0)
 
   return (
     <div className="animate-fade-in">
@@ -57,38 +70,50 @@ export default function Market() {
       <div className="card" style={{ marginBottom: 'var(--sp-6)' }}>
         <div className="card-header">
           <h3>{t('market_priceTrends')}</h3>
-          <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
-            <select className="form-select" style={{ width: 150 }} value={crop} onChange={e => setCrop(e.target.value)}>
-              {crops.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+          <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+            <select className="form-select" style={{ width: 160 }} value={commodity} onChange={e => setCommodity(e.target.value)}>
+              {commodities.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select className="form-select" style={{ width: 160 }} value={state} onChange={e => setState(e.target.value)}>
+              <option value="">All States</option>
+              {availableStates.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <select className="form-select" style={{ width: 120 }} value={days} onChange={e => setDays(+e.target.value)}>
-              <option value={7}>7 days</option>
-              <option value={14}>14 days</option>
               <option value={30}>30 days</option>
+              <option value={90}>90 days</option>
+              <option value={180}>6 months</option>
+              <option value={365}>1 year</option>
             </select>
+            {priceData?.source === 'agmarknet' && <span className="badge badge-green" style={{ fontSize: '0.6rem' }}>Real Data</span>}
           </div>
         </div>
         <div className="card-body">
           {priceData && (
-            <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', gap: 'var(--sp-6)', alignItems: 'center' }}>
+            <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', gap: 'var(--sp-6)', alignItems: 'center', flexWrap: 'wrap' }}>
               <div>
                 <div className="text-xs text-muted">{t('market_latestPrice')}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹{priceData.latest_price?.toLocaleString()}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹{priceData.latest_price?.toLocaleString() || '—'}</div>
               </div>
               <div>
                 <div className="text-xs text-muted">{t('market_trend')}</div>
-                <span className={`badge ${priceData.trend === 'rising' ? 'badge-green' : 'badge-red'}`}>
-                  {priceData.trend === 'rising' ? '↑' : '↓'} {Math.abs(priceData.trend_pct)}% {priceData.trend}
+                <span className={`badge ${priceData.trend === 'up' ? 'badge-green' : 'badge-red'}`}>
+                  {priceData.trend === 'up' ? '↑' : '↓'} {priceData.trend}
                 </span>
               </div>
               <div>
                 <div className="text-xs text-muted">{t('market_crop')}</div>
-                <div className="font-semibold" style={{ textTransform: 'capitalize' }}>{priceData.crop}</div>
+                <div className="font-semibold" style={{ textTransform: 'capitalize' }}>{priceData.commodity || priceData.crop}</div>
               </div>
               <div>
-                <div className="text-xs text-muted">{t('market_district')}</div>
-                <div className="font-semibold">{priceData.district}</div>
+                <div className="text-xs text-muted">Data Points</div>
+                <div className="font-semibold">{priceData.data_points || chartData.length}</div>
               </div>
+              {priceData.state && (
+                <div>
+                  <div className="text-xs text-muted">State</div>
+                  <div className="font-semibold">{priceData.state}</div>
+                </div>
+              )}
             </div>
           )}
           {loading ? (

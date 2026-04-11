@@ -110,7 +110,7 @@ if os.path.exists(NEW_DATA_PATH):
         X_train, X_test, y_train, y_test = train_test_split(
             X, y_enc, test_size=0.20, random_state=42
         )
-        print("  ⚠️ Used non-stratified split")
+        print("  [WARN] Used non-stratified split")
 
     pipeline = Pipeline([
         ("scaler", StandardScaler()),
@@ -159,7 +159,7 @@ if os.path.exists(NEW_DATA_PATH):
     }
     model_path = os.path.join(OUTPUT_DIR, "crop_recommendation_rf.pkl")
     joblib.dump(bundle, model_path, compress=3)
-    print(f"✅ Saved: {model_path}")
+    print(f"[OK] Saved: {model_path}")
 
     # Quick verification
     state_val = state_encoder.transform(["Uttar Pradesh"])[0]
@@ -217,9 +217,9 @@ elif os.path.exists(OLD_DATA_PATH):
     }
     model_path = os.path.join(OUTPUT_DIR, "crop_recommendation_rf.pkl")
     joblib.dump(bundle, model_path, compress=3)
-    print(f"✅ Saved: {model_path}")
+    print(f"[OK] Saved: {model_path}")
 else:
-    print("⚠️  No crop recommendation dataset found, skipping.")
+    print("[WARN] No crop recommendation dataset found, skipping.")
 
 
 # ═══════════════════════════════════════════════════
@@ -235,7 +235,7 @@ if os.path.exists(DATA_PATH2):
     print(f"Dataset: {df2.shape[0]} rows")
 
     if df2.shape[0] < 100:
-        print("⚠️  Dataset too small (likely LFS pointer). Skipping yield model.")
+        print("[WARN] Dataset too small (likely LFS pointer). Skipping yield model.")
         print("   Run 'git lfs pull' to fetch the actual dataset.")
     else:
         df2["year_num"] = df2["Year"].str[:4].astype(int)
@@ -300,9 +300,9 @@ if os.path.exists(DATA_PATH2):
         }
         model_path2 = os.path.join(OUTPUT_DIR, "crop_yield_xgboost.pkl")
         joblib.dump(bundle2, model_path2, compress=3)
-        print(f"✅ Saved: {model_path2}")
+        print(f"[OK] Saved: {model_path2}")
 else:
-    print("⚠️  Yield dataset not found, skipping.")
+    print("[WARN] Yield dataset not found, skipping.")
 
 
 # ═══════════════════════════════════════════════════
@@ -383,11 +383,11 @@ if os.path.exists(DATA_PATH3):
     }
     model_path3 = os.path.join(OUTPUT_DIR, "crop_price_xgboost.pkl")
     joblib.dump(bundle3, model_path3, compress=3)
-    print(f"✅ Saved: {model_path3}")
+    print(f"[OK] Saved: {model_path3}")
 else:
-    print("⚠️  Price dataset not found, skipping.")
+    print("[WARN] Price dataset not found, skipping.")
 
 
-print("\n🎉 All models retrained with current sklearn version!")
+print("\nAll models retrained with current sklearn version!")
 print(f"   sklearn: {__import__('sklearn').__version__}")
 print(f"   numpy:   {np.__version__}")
