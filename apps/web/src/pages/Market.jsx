@@ -6,7 +6,7 @@ import { useLocation } from '../contexts/LocationContext'
 
 export default function Market() {
   const { t } = useLanguage()
-  const { state: detectedState } = useLocation()
+  const { state: detectedState, city: detectedCity } = useLocation()
   const [commodity, setCommodity] = useState('Wheat')
   const [state, setState] = useState(detectedState || '')
   const [days, setDays] = useState(90)
@@ -14,9 +14,11 @@ export default function Market() {
   const [loading, setLoading] = useState(false)
   const [metadata, setMetadata] = useState(null)
 
-  // Price prediction form
+  // Price prediction form — district auto-filled from IP, no market input
   const [predForm, setPredForm] = useState({
-    state: detectedState || 'Uttar Pradesh', district: '', market: '',
+    state: detectedState || 'Uttar Pradesh',
+    district: detectedCity || '',
+    market: detectedCity || '',
     commodity: 'Wheat', variety: 'Other', grade: 'FAQ',
     min_price: 2200, max_price: 2500, month: new Date().getMonth() + 1, year: 2026
   })
@@ -31,6 +33,23 @@ export default function Market() {
   useEffect(() => {
     if (detectedState && !state) setState(detectedState)
   }, [detectedState])
+
+  // Auto-fill district & market from IP detection
+  useEffect(() => {
+    if (detectedCity) {
+      setPredForm(f => ({
+        ...f,
+        district: f.district || detectedCity,
+        market: f.market || detectedCity,
+      }))
+    }
+    if (detectedState) {
+      setPredForm(f => ({
+        ...f,
+        state: f.state || detectedState,
+      }))
+    }
+  }, [detectedCity, detectedState])
 
   const commodities = metadata?.commodities || ['Wheat', 'Rice', 'Maize', 'Cotton', 'Onion', 'Potato', 'Tomato', 'Sugarcane']
   const availableStates = metadata?.states ? Object.keys(metadata.states).sort() : []
@@ -142,26 +161,51 @@ export default function Market() {
       <div className="card">
         <div className="card-header">
           <h3>{t('market_pricePrediction')}</h3>
-          <span className="badge badge-blue">XGBoost Model</span>
+          <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
+            <span className="badge badge-blue">XGBoost Model</span>
+            {detectedCity && (
+              <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>
+                📍 {detectedCity}{detectedState ? `, ${detectedState}` : ''}
+              </span>
+            )}
+          </div>
         </div>
         <div className="card-body">
           <form onSubmit={handlePredict}>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">{t('market_commodity')}</label>
-                <input className="form-input" value={predForm.commodity} onChange={e => setPredForm(f => ({...f, commodity: e.target.value}))} />
+                <select className="form-select" value={predForm.commodity} onChange={e => setPredForm(f => ({...f, commodity: e.target.value}))}>
+                  {commodities.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">{t('market_state')}</label>
-                <input className="form-input" value={predForm.state} onChange={e => setPredForm(f => ({...f, state: e.target.value}))} />
+                <select className="form-select" value={predForm.state} onChange={e => setPredForm(f => ({...f, state: e.target.value}))}>
+                  {availableStates.length > 0
+                    ? availableStates.map(s => <option key={s} value={s}>{s}</option>)
+                    : <option value={predForm.state}>{predForm.state}</option>
+                  }
+                </select>
               </div>
               <div className="form-group">
-                <label className="form-label">{t('market_district')}</label>
-                <input className="form-input" value={predForm.district} onChange={e => setPredForm(f => ({...f, district: e.target.value}))} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">{t('market_marketLabel')}</label>
-                <input className="form-input" value={predForm.market} onChange={e => setPredForm(f => ({...f, market: e.target.value}))} />
+                <label className="form-label">District (Auto-detected)</label>
+                <div style={{
+                  padding: '10px 14px',
+                  background: 'var(--green-50)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--green-200)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--sp-2)',
+                  minHeight: 42,
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: 'var(--green-700)',
+                }}>
+                  <span>📍</span>
+                  <span>{predForm.district || detectedCity || 'Detecting...'}</span>
+                </div>
               </div>
             </div>
             <div className="form-row">

@@ -128,6 +128,55 @@ def get_price_metadata():
     }
 
 
+# ── Yield Districts (from model bundle or pre-processed JSON) ──────
+_yield_districts_cache = None
+
+
+def _load_yield_districts():
+    """Load state→districts mapping. Prefers model bundle, falls back to JSON."""
+    global _yield_districts_cache
+    if _yield_districts_cache is not None:
+        return _yield_districts_cache
+
+    # 1. Try from yield model bundle (most accurate — matches training data)
+    if _yield_bundle is not None and "state_districts_map" in _yield_bundle:
+        _yield_districts_cache = _yield_bundle["state_districts_map"]
+        total = sum(len(v) for v in _yield_districts_cache.values())
+        print(f"  [OK] Yield districts from model bundle ({len(_yield_districts_cache)} states, {total} districts)")
+        return _yield_districts_cache
+
+    # 2. Fall back to pre-processed JSON file
+    import json
+    districts_path = PROJECT_ROOT / "datasets" / "yield_state_districts.json"
+    try:
+        if districts_path.exists():
+            with open(districts_path, "r", encoding="utf-8") as f:
+                _yield_districts_cache = json.load(f)
+            total = sum(len(v) for v in _yield_districts_cache.values())
+            print(f"  [OK] Yield districts from JSON ({len(_yield_districts_cache)} states, {total} districts)")
+        else:
+            print(f"  [WARN] yield_state_districts.json not found")
+            _yield_districts_cache = {}
+    except Exception as e:
+        print(f"  [ERROR] Failed to load yield districts: {e}")
+        _yield_districts_cache = {}
+    return _yield_districts_cache
+
+
+def get_yield_districts(state: str) -> list[str]:
+    """Return list of districts available in the yield dataset for a given state."""
+    mapping = _load_yield_districts()
+    if not state:
+        return []
+    # Try exact match first, then case-insensitive
+    if state in mapping:
+        return mapping[state]
+    for key, districts in mapping.items():
+        if key.lower() == state.strip().lower():
+            return districts
+    return []
+
+
 def recommend_crop(nitrogen: float, phosphorus: float, potassium: float,
                    temperature: float, humidity: float, ph: float,
                    rainfall: float, top_k: int = 3,

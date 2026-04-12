@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`
@@ -91,10 +92,14 @@ export default function Chatbot() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isListening, setIsListening] = useState(false)
   const messagesEndRef = useRef(null)
-  const recognitionRef = useRef(null)
   const inputRef = useRef(null)
+
+  // Azure Speech-to-Text via shared hook
+  const { isListening, isProcessing, isSupported, toggleListening, stopListening } = useSpeechRecognition({
+    lang: speechCode,
+    onResult: (text) => setInput(text),
+  })
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -119,6 +124,8 @@ export default function Chatbot() {
     const text = input.trim()
     if (!text || isLoading) return
 
+    if (isListening) stopListening()
+
     const userMsg = { role: 'user', text }
     const newMessages = [...messages, userMsg]
     setMessages(newMessages)
@@ -139,42 +146,6 @@ export default function Chatbot() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
-    }
-  }
-
-  // Speech Recognition
-  const startListening = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      alert(t('chat_speechNotSupported'))
-      return
-    }
-
-    const recognition = new SpeechRecognition()
-    recognition.lang = speechCode
-    recognition.interimResults = true
-    recognition.continuous = false
-
-    recognition.onstart = () => setIsListening(true)
-
-    recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map(r => r[0].transcript)
-        .join('')
-      setInput(transcript)
-    }
-
-    recognition.onerror = () => setIsListening(false)
-    recognition.onend = () => setIsListening(false)
-
-    recognitionRef.current = recognition
-    recognition.start()
-  }
-
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop()
-      setIsListening(false)
     }
   }
 
@@ -233,11 +204,12 @@ export default function Chatbot() {
           {/* Input */}
           <div className="chatbot-input-area">
             <button
-              className={`chatbot-mic-btn ${isListening ? 'listening' : ''}`}
-              onClick={isListening ? stopListening : startListening}
-              title={isListening ? t('chat_listening') : 'Voice input'}
+              className={`chatbot-mic-btn ${isListening ? 'listening' : ''} ${isProcessing ? 'processing' : ''}`}
+              onClick={toggleListening}
+              title={isProcessing ? 'Processing...' : isListening ? t('chat_listening') : 'Voice input'}
+              disabled={isProcessing}
             >
-              {isListening ? '⏹️' : '🎤'}
+              {isProcessing ? '...' : isListening ? '⏹️' : '🎤'}
             </button>
             <input
               ref={inputRef}

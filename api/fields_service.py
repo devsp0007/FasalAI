@@ -42,6 +42,7 @@ def create_field(user_id: int, data: dict) -> dict:
         "soil_ph": data.get("soil_ph", 7.0),
         "soil_type": data.get("soil_type", ""),
         "previous_crop": data.get("previous_crop", ""),
+        "current_crop": data.get("current_crop", ""),
         "latitude": data.get("latitude"),
         "longitude": data.get("longitude"),
         "status": data.get("status", "active"),
@@ -63,7 +64,8 @@ def update_field(user_id: int, field_id: int, data: dict) -> dict | None:
     update_data = {}
     allowed_fields = [
         "label", "area_ha", "irrigation", "soil_n", "soil_p", "soil_k",
-        "soil_ph", "soil_type", "previous_crop", "latitude", "longitude", "status"
+        "soil_ph", "soil_type", "previous_crop", "current_crop",
+        "latitude", "longitude", "status"
     ]
     for key in allowed_fields:
         if key in data:

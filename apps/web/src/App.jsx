@@ -16,6 +16,7 @@ import DiseaseDetection from './pages/DiseaseDetection'
 import PestAlerts from './pages/PestAlerts'
 import Fertilizer from './pages/Fertilizer'
 import Community from './pages/Community'
+import Feedback from './pages/Feedback'
 import Login from './pages/Login'
 
 function Sidebar({ isOpen, onClose }) {
@@ -73,6 +74,9 @@ function Sidebar({ isOpen, onClose }) {
           <div className="sidebar-section-label">{t('nav_community') || 'Community'}</div>
           <NavLink to="/community" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
             <span className="nav-icon">💬</span> {t('nav_communityChat') || 'Community Chat'}
+          </NavLink>
+          <NavLink to="/feedback" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+            <span className="nav-icon">📝</span> {t('nav_feedback') || 'Feedback'}
           </NavLink>
 
           <div className="sidebar-section-label">{t('nav_account')}</div>
@@ -140,6 +144,10 @@ function BottomNav() {
             <span className="more-drawer-icon">💬</span>
             <span className="more-drawer-label">{t('nav_communityChat') || 'Community'}</span>
           </NavLink>
+          <NavLink to="/feedback" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
+            <span className="more-drawer-icon">📝</span>
+            <span className="more-drawer-label">{t('nav_feedback') || 'Feedback'}</span>
+          </NavLink>
           <NavLink to="/profile" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
             <span className="more-drawer-icon">👤</span>
             <span className="more-drawer-label">{t('nav_profile') || 'Profile'}</span>
@@ -196,6 +204,7 @@ function TopBar({ onMenuToggle }) {
     '/market': t('nav_marketPrices'),
     '/yield': t('nav_yieldPrediction'),
     '/community': t('nav_communityChat') || 'Community Chat',
+    '/feedback': t('nav_feedback') || 'Feedback',
     '/profile': t('topbar_profileSettings'),
   }
   const title = PAGE_TITLES[location.pathname] || t('brand_title')
@@ -254,6 +263,7 @@ function AppLayout() {
             <Route path="/market" element={<Market />} />
             <Route path="/yield" element={<YieldPredict />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/feedback" element={<Feedback />} />
             <Route path="/profile" element={<Profile />} />
           </Routes>
         </div>

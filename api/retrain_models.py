@@ -244,10 +244,15 @@ if os.path.exists(DATA_PATH2):
         q995 = df2["Yield"].quantile(0.995)
         df2 = df2[df2["Yield"] <= q995]
 
-        SAMPLE_SIZE = 80_000
-        if len(df2) > SAMPLE_SIZE:
-            df2 = df2.sample(n=SAMPLE_SIZE, random_state=42).reset_index(drop=True)
+        print(f"After cleaning: {len(df2):,} rows")
+        print(f"States: {df2['State'].nunique()}, Districts: {df2['District'].nunique()}, Crops: {df2['Crop'].nunique()}")
 
+        # Build state → districts mapping BEFORE any sampling (full dataset)
+        state_districts_map = {}
+        for s in sorted(df2["State"].unique()):
+            state_districts_map[s] = sorted(df2[df2["State"] == s]["District"].dropna().unique().tolist())
+
+        # Train on FULL dataset — no sampling, to preserve all districts
         CAT_FEATURES = ["State", "District", "Crop", "Season"]
         NUM_FEATURES = ["log_area", "year_num"]
         ALL_FEATURES = CAT_FEATURES + NUM_FEATURES
@@ -266,6 +271,8 @@ if os.path.exists(DATA_PATH2):
         X2_train, y2_train = X2[mask_train], y2[mask_train]
         X2_test, y2_test = X2[mask_test], y2[mask_test]
 
+        print(f"Train: {len(X2_train):,} rows, Test: {len(X2_test):,} rows")
+
         cat_transformer = Pipeline([("enc", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1))])
         num_transformer = Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())])
         preprocessor = ColumnTransformer([("cat", cat_transformer, CAT_FEATURES), ("num", num_transformer, NUM_FEATURES)])
@@ -278,7 +285,7 @@ if os.path.exists(DATA_PATH2):
                 subsample=0.8, max_features="sqrt", random_state=42,
             ))
         ])
-        print("Training yield model...")
+        print("Training yield model on FULL dataset...")
         pipeline2.fit(X2_train, y2_train)
 
         from sklearn.metrics import r2_score
@@ -297,10 +304,12 @@ if os.path.exists(DATA_PATH2):
             "states": sorted(df2["State"].unique().tolist()),
             "seasons": sorted(df2["Season"].unique().tolist()),
             "year_range": [int(df2["year_num"].min()), int(df2["year_num"].max())],
+            "state_districts_map": state_districts_map,
         }
         model_path2 = os.path.join(OUTPUT_DIR, "crop_yield_xgboost.pkl")
         joblib.dump(bundle2, model_path2, compress=3)
         print(f"[OK] Saved: {model_path2}")
+        print(f"     Districts in model: {sum(len(v) for v in state_districts_map.values())}")
 else:
     print("[WARN] Yield dataset not found, skipping.")
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getCommunityMessages, sendCommunityMessage, getOnlineCount } from '../services/api';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 // Generate consistent color from username
 function hashColor(str) {
@@ -14,7 +15,7 @@ function hashColor(str) {
 }
 
 export default function Community() {
-  const { t } = useLanguage();
+  const { t, speechCode } = useLanguage();
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -23,6 +24,12 @@ export default function Community() {
   const [onlineCount, setOnlineCount] = useState(1);
   const messagesEndRef = useRef(null);
   const pollRef = useRef(null);
+
+  // Azure Speech-to-Text via shared hook
+  const { isListening, isProcessing, isSupported, toggleListening, stopListening } = useSpeechRecognition({
+    lang: speechCode || 'en-IN',
+    onResult: (text) => setInput(text),
+  });
 
   // Load messages
   const loadMessages = useCallback(async () => {
@@ -37,23 +44,23 @@ export default function Community() {
 
   useEffect(() => {
     loadMessages();
-    // Poll for new messages every 5 seconds
     pollRef.current = setInterval(loadMessages, 5000);
-    // Get online count
     getOnlineCount().then(d => setOnlineCount(d.online_count || 1)).catch(() => {});
     return () => clearInterval(pollRef.current);
   }, [loadMessages]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+
 
   async function handleSend(e) {
     e.preventDefault();
     const msg = input.trim();
     if (!msg || sending) return;
 
+    if (isListening) stopListening();
     setSending(true);
     setInput('');
     try {
@@ -61,12 +68,11 @@ export default function Community() {
       await loadMessages();
     } catch (err) {
       console.error('Send failed:', err);
-      setInput(msg); // Restore on failure
+      setInput(msg);
     }
     setSending(false);
   }
 
-  // Group messages by date
   function groupByDate(msgs) {
     const groups = {};
     msgs.forEach(msg => {
@@ -83,7 +89,6 @@ export default function Community() {
 
   return (
     <div className="community-page">
-      {/* Header */}
       <div className="chat-header">
         <div className="chat-header-info">
           <h2>💬 {t('community_title') || 'Community Chat'}</h2>
@@ -95,10 +100,8 @@ export default function Community() {
         <p className="chat-desc">{t('community_desc') || 'Connect with other farmers, share tips, and ask questions'}</p>
       </div>
 
-      {/* Messages */}
       <div className="chat-messages">
         {loading && <div className="chat-loading">{t('community_loading') || 'Loading messages...'}</div>}
-
         {!loading && messages.length === 0 && (
           <div className="chat-empty">
             <div className="empty-icon">💬</div>
@@ -106,7 +109,6 @@ export default function Community() {
             <p>{t('community_emptyDesc') || 'Start the conversation!'}</p>
           </div>
         )}
-
         {Object.entries(grouped).map(([date, msgs]) => (
           <div key={date}>
             <div className="date-divider"><span>{date}</span></div>
@@ -134,13 +136,22 @@ export default function Community() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* Input with Mic */}
       <form className="chat-input-bar" onSubmit={handleSend}>
+        <button
+          type="button"
+          className={`chat-mic-btn ${isListening ? 'listening' : ''} ${isProcessing ? 'processing' : ''}`}
+          onClick={toggleListening}
+          title={isProcessing ? 'Processing...' : isListening ? 'Stop recording' : 'Voice input'}
+          disabled={!user || isProcessing}
+        >
+          {isProcessing ? '...' : isListening ? '⏹️' : '🎤'}
+        </button>
         <input
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder={t('community_placeholder') || 'Type a message...'}
+          placeholder={isProcessing ? 'Processing speech...' : (t('community_placeholder') || 'Type a message...')}
           maxLength={2000}
           disabled={!user}
         />
@@ -148,6 +159,13 @@ export default function Community() {
           {sending ? '...' : '➤'}
         </button>
       </form>
+
+      {(isListening || isProcessing) && (
+        <div className="listening-indicator">
+          <span className="listening-pulse"></span>
+          {isProcessing ? 'Processing speech...' : 'Recording... Speak now'}
+        </div>
+      )}
 
       {!user && (
         <div className="login-notice">{t('community_loginRequired') || 'Please login to send messages'}</div>
@@ -244,6 +262,38 @@ export default function Community() {
         .login-notice {
           text-align: center; padding: 0.5rem; font-size: 0.8rem;
           color: var(--text-secondary, #999);
+        }
+
+        .chat-mic-btn {
+          width: 44px; height: 44px; border-radius: 50%;
+          border: none; background: var(--bg-secondary, #f0f0f0);
+          cursor: pointer; font-size: 1.1rem;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.2s; flex-shrink: 0;
+        }
+        .chat-mic-btn:hover:not(:disabled) { background: var(--green-50, #E8F5E9); }
+        .chat-mic-btn.listening {
+          background: #EF5350; color: white;
+          animation: pulse-mic 1.5s infinite;
+        }
+        @keyframes pulse-mic {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.4); }
+          50% { box-shadow: 0 0 0 8px rgba(239, 83, 80, 0); }
+        }
+        .chat-mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .chat-mic-btn.processing {
+          background: #FF9800; color: white;
+          animation: pulse-mic 1s infinite; opacity: 1;
+        }
+
+        .listening-indicator {
+          display: flex; align-items: center; gap: 8px;
+          justify-content: center; padding: 4px 0;
+          font-size: 0.75rem; color: #EF5350; font-weight: 600;
+        }
+        .listening-pulse {
+          width: 8px; height: 8px; background: #EF5350;
+          border-radius: 50%; animation: pulse 1s infinite;
         }
 
         @media (max-width: 600px) {

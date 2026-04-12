@@ -1,18 +1,34 @@
-import { useState } from 'react'
-import { predictYield } from '../services/api'
+import { useState, useEffect } from 'react'
+import { predictYield, getYieldDistricts } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useLocation } from '../contexts/LocationContext'
 
-const STATES = ['Andhra Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Gujarat', 'Haryana', 'Himachal Pradesh',
-  'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya',
-  'Odisha', 'Punjab', 'Rajasthan', 'Tamil Nadu', 'Telangana', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal']
+const STATES = [
+  'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
+  'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli', 'Daman and Diu', 'Delhi',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu and Kashmir',
+  'Jharkhand', 'Karnataka', 'Kerala', 'Laddakh', 'Madhya Pradesh',
+  'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland',
+  'Odisha', 'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim',
+  'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+]
 
-const CROPS = ['Rice', 'Wheat', 'Maize', 'Sugarcane', 'Cotton(lint)', 'Groundnut', 'Soyabean', 'Potato',
-  'Onion', 'Bajra', 'Jowar', 'Barley', 'Gram', 'Urad', 'Moong(Green Gram)', 'Ragi',
-  'Banana', 'Coconut', 'Jute', 'Tobacco', 'Turmeric']
+const CROPS = [
+  'Arecanut', 'Arhar/Tur', 'Bajra', 'Banana', 'Barley', 'Bean', 'Bhindi',
+  'Bottle Gourd', 'Brinjal', 'Cabbage', 'Cashewnut', 'Castor seed', 'Coconut',
+  'Coffee', 'Coriander', 'Cotton(lint)', 'Cowpea(Lobia)', 'Drum Stick', 'Garlic',
+  'Ginger', 'Gram', 'Groundnut', 'Guar seed', 'Horse-gram', 'Jowar', 'Jute',
+  'Khesari', 'Lemon', 'Linseed', 'Maize', 'Mango', 'Masoor', 'Mesta',
+  'Moong(Green Gram)', 'Moth', 'Niger seed', 'Onion', 'Other Kharif pulses',
+  'Peas & beans (Pulses)', 'Potato', 'Ragi', 'Rapeseed & Mustard', 'Rice',
+  'Safflower', 'Sesamum', 'Small millets', 'Soyabean', 'Sugarcane', 'Sunflower',
+  'Sweet potato', 'Tapioca', 'Tobacco', 'Turmeric', 'Urad', 'Wheat'
+]
 
 const SEASONS = ['Kharif', 'Rabi', 'Whole Year', 'Summer', 'Autumn', 'Winter']
 
 export default function YieldPredict() {
+  const { city: detectedCity, state: detectedState } = useLocation()
   const [form, setForm] = useState({
     state: 'Punjab', district: 'LUDHIANA', crop: 'Wheat',
     season: 'Rabi', area_ha: 5.0, year: 2026
@@ -21,6 +37,52 @@ export default function YieldPredict() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const { t } = useLanguage()
+
+  // District dropdown data
+  const [districts, setDistricts] = useState([])
+  const [districtsLoading, setDistrictsLoading] = useState(false)
+  const [usingIpDistrict, setUsingIpDistrict] = useState(false)
+
+  // Auto-fill state from IP detection
+  useEffect(() => {
+    if (detectedState) {
+      const matchedState = STATES.find(s => s.toLowerCase() === detectedState.toLowerCase())
+      if (matchedState) {
+        setForm(f => ({ ...f, state: matchedState }))
+      }
+    }
+  }, [detectedState])
+
+  // Load districts when state changes
+  useEffect(() => {
+    if (!form.state) return
+    setDistrictsLoading(true)
+    setUsingIpDistrict(false)
+    getYieldDistricts(form.state)
+      .then(data => {
+        const distList = data.districts || []
+        setDistricts(distList)
+        if (distList.length > 0) {
+          // If detected city matches a district, select it; otherwise first
+          const cityUpper = (detectedCity || '').toUpperCase()
+          const match = distList.find(d => d.toUpperCase() === cityUpper)
+          setForm(f => ({ ...f, district: match || distList[0] }))
+          setUsingIpDistrict(!!match)
+        } else {
+          // No districts in dataset — fall back to IP city
+          const fallback = detectedCity ? detectedCity.toUpperCase() : ''
+          setForm(f => ({ ...f, district: fallback }))
+          setUsingIpDistrict(true)
+        }
+      })
+      .catch(() => {
+        setDistricts([])
+        const fallback = detectedCity ? detectedCity.toUpperCase() : ''
+        setForm(f => ({ ...f, district: fallback }))
+        setUsingIpDistrict(true)
+      })
+      .finally(() => setDistrictsLoading(false))
+  }, [form.state, detectedCity])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -50,8 +112,39 @@ export default function YieldPredict() {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t('yield_district')}</label>
-                  <input className="form-input" value={form.district} onChange={e => setForm(f => ({...f, district: e.target.value}))} placeholder="e.g. LUDHIANA" />
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+                    {t('yield_district')}
+                    {usingIpDistrict && (
+                      <span className="badge badge-green" style={{ fontSize: '0.6rem', padding: '2px 6px' }}>📍 Detected</span>
+                    )}
+                  </label>
+                  {districtsLoading ? (
+                    <div className="form-input" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)' }}>
+                      <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }}></div>
+                      Loading districts...
+                    </div>
+                  ) : districts.length > 0 ? (
+                    <select className="form-select" value={form.district} onChange={e => { setForm(f => ({...f, district: e.target.value})); setUsingIpDistrict(false) }}>
+                      {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  ) : (
+                    <div style={{
+                      padding: '10px 14px',
+                      background: 'var(--green-50)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--green-200)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--sp-2)',
+                      minHeight: 42,
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      color: 'var(--green-700)',
+                    }}>
+                      <span>📍</span>
+                      <span>{form.district || detectedCity?.toUpperCase() || 'Detecting...'}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="form-row">

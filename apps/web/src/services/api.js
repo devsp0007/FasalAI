@@ -136,6 +136,10 @@ export async function predictPrice(data) {
   });
 }
 
+export async function getYieldDistricts(state) {
+  return apiCall(`/yield/districts?state=${encodeURIComponent(state)}`);
+}
+
 export async function getCrops() {
   return apiCall('/crops');
 }
@@ -309,7 +313,32 @@ export async function getOnlineCount() {
   return apiCall('/community/online');
 }
 
-// ── Default Export ────────────────────────────────────
+// ── Feedback ──────────────────────────────────────────
+
+export async function submitFeedback(data) {
+  return apiCall('/feedback', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getFeedbackHistory(limit = 10) {
+  return apiCall(`/feedback?limit=${limit}`);
+}
+
+// ── Speech-to-Text (Azure) ────────────────────────────
+
+export async function speechToText(audioBlob, language = 'en-IN') {
+  const formData = new FormData();
+  formData.append('audio', audioBlob, 'recording.wav');
+  formData.append('language', language);
+
+  return apiCall('/speech-to-text', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 
 const api = {
   // Auth
@@ -321,7 +350,7 @@ const api = {
   // Health
   healthCheck,
   // ML
-  recommendCrop, predictYield, predictPrice, getCrops,
+  recommendCrop, predictYield, predictPrice, getYieldDistricts, getCrops,
   // Location
   detectLocation,
   // Weather
@@ -343,6 +372,10 @@ const api = {
   recommendFertilizer, getOrganicRemedies, getFertilizerMetadata,
   // Community
   getCommunityMessages, sendCommunityMessage, getOnlineCount,
+  // Feedback
+  submitFeedback, getFeedbackHistory,
+  // Speech
+  speechToText,
 };
 
 export default api;

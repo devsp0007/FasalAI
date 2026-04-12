@@ -121,7 +121,7 @@ Open **http://localhost:5173** → Register with phone & password → Start usin
 6. Click **Deploy** → Wait for build (~5-10 min on first deploy)
 7. Your API will be at: `https://smartcrop-api.onrender.com`
 
-> 💡 **Alternative Hosting**: See `MDs/deepnote_deployment_guide.md` or `MDs/azure_deployment_guide.md` for deploying the application on Microsoft Azure or Deepnote.
+> 💡 **Alternative Hosting**: See `MDs/deepnote_deployment_guide.md` for deploying the application on Deepnote.
 
 ### Frontend — Vercel
 
@@ -190,4 +190,4 @@ Open **http://localhost:5173** → Register with phone & password → Start usin
 
 ## 📄 License
 
-GPL-3.0 License — Built for SIH 2025 by ANKUR PRATAP SINGH.
+GPL-3.0 License — Built by ANKUR PRATAP SINGH.

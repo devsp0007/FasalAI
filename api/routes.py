@@ -13,7 +13,8 @@ import os
 from ml_service import (
     recommend_crop, predict_yield, predict_price,
     get_crop_list, get_yield_metadata, get_price_metadata,
-    get_state_list, get_soil_types, get_state_crops, get_dataset_version
+    get_state_list, get_soil_types, get_state_crops, get_dataset_version,
+    get_yield_districts
 )
 from scoring_engine import apply_scoring
 from disease_service import detect_disease, get_supported_disease_crops
@@ -151,6 +152,7 @@ class FieldRequest(BaseModel):
     soil_ph: float = 7.0
     soil_type: str = ""
     previous_crop: str = ""
+    current_crop: str = ""
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     status: str = "active"
@@ -597,6 +599,15 @@ async def disease_detect(
 
 # ── Yield Prediction ─────────────────────────────────────
 
+@router.get("/yield/districts")
+async def get_yield_districts_endpoint(
+    state: str = Query(default="", description="State name"),
+):
+    """Return districts available in the yield dataset for a given state."""
+    districts = get_yield_districts(state)
+    return {"state": state, "districts": districts, "total": len(districts)}
+
+
 @router.post("/predict/yield")
 async def get_yield_prediction(req: YieldPredictionRequest):
     try:
@@ -928,3 +939,80 @@ async def get_online_count():
     result = sb.table("community_messages").select("user_id").gte("created_at", cutoff).execute()
     unique_users = set(m["user_id"] for m in (result.data or []))
     return {"online_count": max(1, len(unique_users)), "active_in_last_5min": len(unique_users)}
+
+
+# ── Feedback ─────────────────────────────────────────────
+
+class FeedbackRequest(BaseModel):
+    area: str  # e.g. 'crop_recommendation', 'market_prices', etc.
+    message: str
+
+
+@router.post("/feedback")
+async def submit_feedback(req: FeedbackRequest, request: Request):
+    """Submit user feedback to Supabase."""
+    user = _extract_user(request)
+
+    if not req.message.strip():
+        raise HTTPException(status_code=400, detail="Feedback message cannot be empty")
+    if not req.area:
+        raise HTTPException(status_code=400, detail="Feedback area is required")
+
+    from db import get_supabase
+    sb = get_supabase()
+
+    feedback_data = {
+        "user_id": user["user_id"],
+        "user_name": user.get("name", "Anonymous"),
+        "area": req.area.strip(),
+        "message": req.message.strip(),
+    }
+
+    result = sb.table("feedback").insert(feedback_data).execute()
+
+    if result.data and len(result.data) > 0:
+        return {"feedback": result.data[0], "success": True}
+    raise HTTPException(status_code=500, detail="Failed to submit feedback")
+
+
+@router.get("/feedback")
+async def get_feedback_history(
+    request: Request,
+    limit: int = Query(default=10, ge=1, le=50),
+):
+    """Get the current user's feedback history."""
+    user = _extract_user(request)
+
+    from db import get_supabase
+    sb = get_supabase()
+
+    result = (
+        sb.table("feedback")
+        .select("*")
+        .eq("user_id", user["user_id"])
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return {"feedback": result.data or [], "total": len(result.data or [])}
+
+
+# ── Speech-to-Text (Azure) ──────────────────────────────
+
+@router.post("/speech-to-text")
+async def speech_to_text_endpoint(
+    audio: UploadFile = File(...),
+    language: str = Form(default="en-IN"),
+):
+    """
+    Convert speech audio to text using Azure Cognitive Services.
+    Accepts audio file (WAV/WebM/OGG) and optional language code.
+    """
+    from speech_service import transcribe_audio
+
+    result = await transcribe_audio(audio, language)
+
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("error", "Speech recognition failed"))
+
+    return result
