@@ -18,166 +18,309 @@ import Fertilizer from './pages/Fertilizer'
 import Community from './pages/Community'
 import Feedback from './pages/Feedback'
 import Login from './pages/Login'
+import Landing from './pages/Landing'
 
+/* ─── Navigation Config ─────────────────────────────── */
+const NAV_ITEMS = [
+  { icon: 'dashboard', label: 'Dashboard', emoji: '📊', path: '/', end: true },
+  { icon: 'psychology', label: 'Crop Advisory', emoji: '🧭', path: '/recommend' },
+  { icon: 'shutter_speed', label: 'Disease Detection', emoji: '🔬', path: '/disease' },
+  { icon: 'map', label: 'My Fields', emoji: '📍', path: '/fields' },
+  { icon: 'agriculture', label: 'Rotation Planner', emoji: '🌿', path: '/planner' },
+  { icon: 'trending_up', label: 'Market Prices', emoji: '📈', path: '/market' },
+  { icon: 'query_stats', label: 'Yield Prediction', emoji: '🎯', path: '/yield' },
+  { icon: 'warning', label: 'Pest Alerts', emoji: '⚠️', path: '/pests' },
+  { icon: 'water_drop', label: 'Fertilizer', emoji: '🧪', path: '/fertilizer' },
+  { icon: 'groups', label: 'Community', emoji: '💬', path: '/community' },
+  { icon: 'forum', label: 'Feedback', emoji: '💭', path: '/feedback' },
+  { icon: 'person', label: 'Profile', emoji: '👤', path: '/profile' },
+]
+
+const BOTTOM_NAV_ITEMS = [
+  { icon: 'dashboard', label: 'Home', path: '/', end: true },
+  { icon: 'psychology', label: 'Advisory', path: '/recommend' },
+  { icon: 'map', label: 'Fields', path: '/fields' },
+  { icon: 'trending_up', label: 'Market', path: '/market' },
+]
+
+const PAGE_TITLES = {
+  '/': 'Dashboard',
+  '/recommend': 'Crop Advisory',
+  '/disease': 'Disease Detection',
+  '/pests': 'Pest Alerts',
+  '/fields': 'My Fields',
+  '/planner': 'Rotation Planner',
+  '/fertilizer': 'Fertilizer & Remedies',
+  '/market': 'Market Prices',
+  '/yield': 'Yield Prediction',
+  '/community': 'Community Hub',
+  '/feedback': 'Feedback',
+  '/profile': 'Profile',
+}
+
+/* ─── Sidebar (Desktop) ─────────────────────────────── */
 function Sidebar({ isOpen, onClose }) {
-  const { t } = useLanguage()
   const { logout, user } = useAuth()
   const location = useLocation()
 
   // Close sidebar on route change (mobile)
-  useEffect(() => {
-    onClose()
-  }, [location.pathname])
+  useEffect(() => { onClose() }, [location.pathname])
 
   return (
     <>
-      {/* Overlay backdrop for mobile */}
-      {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
-      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="sidebar-brand">
-          <div className="sidebar-brand-icon">🌾</div>
-          <h1>{t('brand_title')}<span>{t('brand_subtitle')}</span></h1>
-          <button className="sidebar-close-btn" onClick={onClose} aria-label="Close menu">✕</button>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-[199] md:hidden animate-fade-in"
+          onClick={onClose}
+        />
+      )}
+
+      <aside className={`
+        fixed md:sticky top-0 left-0 h-screen z-[200]
+        w-[260px] bg-[#f5f7f6] flex flex-col
+        transition-transform duration-300 ease-out overflow-y-auto hide-scrollbar
+        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        {/* Brand */}
+        <div className="px-5 pt-6 pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Logo mark */}
+              <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>eco</span>
+              </div>
+              <div>
+                <h1 className="font-headline font-extrabold text-primary text-lg tracking-tight leading-none">Fasal.AI</h1>
+                <p className="font-label text-[10px] tracking-[0.15em] text-primary/50 uppercase mt-0.5">Premium Intelligence</p>
+              </div>
+            </div>
+            {/* Mobile close */}
+            <button
+              className="md:hidden p-2 rounded-xl hover:bg-surface-container text-on-surface-variant"
+              onClick={onClose}
+            >
+              <span className="material-symbols-outlined text-lg">close</span>
+            </button>
+          </div>
         </div>
-        <nav className="sidebar-nav">
-          <div className="sidebar-section-label">{t('nav_main')}</div>
-          <NavLink to="/" end className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">📊</span> {t('nav_dashboard')}
-          </NavLink>
-          <NavLink to="/recommend" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">🌱</span> {t('nav_cropAdvisory')}
-          </NavLink>
-          <NavLink to="/disease" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">🔬</span> {t('nav_diseaseDetection') || 'Disease Detection'}
-          </NavLink>
-          <NavLink to="/pests" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">🐛</span> {t('nav_pestAlerts') || 'Pest Alerts'}
-          </NavLink>
-          <NavLink to="/fields" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">🗺️</span> {t('nav_myFields')}
-          </NavLink>
-          <NavLink to="/planner" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">📅</span> {t('nav_rotationPlanner')}
-          </NavLink>
-          <NavLink to="/fertilizer" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">🧪</span> {t('nav_fertilizer') || 'Fertilizer & Remedies'}
-          </NavLink>
 
-          <div className="sidebar-section-label">{t('nav_analytics')}</div>
-          <NavLink to="/market" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">📈</span> {t('nav_marketPrices')}
-          </NavLink>
-          <NavLink to="/yield" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">🌾</span> {t('nav_yieldPrediction')}
-          </NavLink>
+        {/* Language Switcher in sidebar */}
+        <div className="px-4 mb-3">
+          <LanguageSwitcher variant="sidebar" />
+        </div>
 
-          <div className="sidebar-section-label">{t('nav_community') || 'Community'}</div>
-          <NavLink to="/community" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">💬</span> {t('nav_communityChat') || 'Community Chat'}
-          </NavLink>
-          <NavLink to="/feedback" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">📝</span> {t('nav_feedback') || 'Feedback'}
-          </NavLink>
-
-          <div className="sidebar-section-label">{t('nav_account')}</div>
-          <NavLink to="/profile" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">👤</span> {t('nav_profile')}
-          </NavLink>
-          <button
-            className="nav-item"
-            onClick={logout}
-            style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', color: 'inherit', font: 'inherit', padding: 'var(--sp-3) var(--sp-4)' }}
-          >
-            <span className="nav-icon">🚪</span> {t('nav_logout') || 'Logout'}
-          </button>
+        {/* Navigation */}
+        <nav className="flex-1 space-y-0.5 px-3 overflow-y-auto hide-scrollbar">
+          {NAV_ITEMS.map(item => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.end}
+              className={({ isActive }) =>
+                isActive
+                  ? 'flex items-center gap-3 bg-white text-on-surface font-bold rounded-2xl px-4 py-3 editorial-shadow transition-all font-body text-[13px]'
+                  : 'flex items-center gap-3 text-on-surface-variant/70 px-4 py-2.5 hover:bg-white/50 rounded-2xl transition-all duration-200 font-body text-[13px] hover:text-on-surface'
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span className={`material-symbols-outlined text-lg ${isActive ? 'text-primary' : ''}`}
+                    style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                    {item.icon}
+                  </span>
+                  <span>{isActive ? `${item.emoji} ` : ''}{item.label}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
         </nav>
+
+        {/* Bottom Section */}
+        <div className="px-4 pb-5 pt-3 space-y-3 mt-auto">
+          {/* New Crop Cycle CTA */}
+          <NavLink
+            to="/recommend"
+            className="w-full flex items-center justify-center gap-2 bg-primary text-white px-4 py-3.5 rounded-full font-bold text-sm hover:bg-primary-container transition-colors shadow-lg shadow-primary/20"
+          >
+            <span className="material-symbols-outlined text-lg">add_circle</span>
+            New Crop Cycle
+          </NavLink>
+
+          {/* User Info */}
+          {user && (
+            <div className="flex items-center gap-3 px-3 py-3">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {(user.name || user.phone || '?')[0].toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-[13px] text-on-surface truncate">{user.name || user.phone}</p>
+                <p className="font-label text-[10px] text-on-surface-variant/50 uppercase tracking-wider">Premium Member ⭐</p>
+              </div>
+              <button
+                onClick={logout}
+                className="p-1.5 rounded-lg hover:bg-error/10 text-on-surface-variant/40 hover:text-error transition-colors"
+                title="Logout"
+              >
+                <span className="material-symbols-outlined text-lg">logout</span>
+              </button>
+            </div>
+          )}
+        </div>
       </aside>
     </>
   )
 }
 
-function BottomNav() {
-  const { t } = useLanguage()
-  const { logout } = useAuth()
-  const [moreOpen, setMoreOpen] = useState(false)
+/* ─── TopBar ─────────────────────────────────────────── */
+function TopBar({ onMenuToggle }) {
   const location = useLocation()
+  const { user } = useAuth()
+  let detectedLoc = null
+  try { detectedLoc = useDetectedLocation() } catch (e) {}
 
-  // Close "More" drawer on route change
-  useEffect(() => {
-    setMoreOpen(false)
-  }, [location.pathname])
+  const title = PAGE_TITLES[location.pathname] || 'Fasal.AI'
 
   return (
-    <>
-      {/* "More" slide-up drawer */}
-      {moreOpen && <div className="more-drawer-overlay" onClick={() => setMoreOpen(false)} />}
-      <div className={`more-drawer ${moreOpen ? 'open' : ''}`}>
-        <div className="more-drawer-handle" onClick={() => setMoreOpen(false)}>
-          <div className="more-drawer-handle-bar" />
-        </div>
-        <div className="more-drawer-grid">
-          <NavLink to="/disease" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
-            <span className="more-drawer-icon">🔬</span>
-            <span className="more-drawer-label">{t('nav_diseaseDetection') || 'Disease Detection'}</span>
-          </NavLink>
-          <NavLink to="/pests" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
-            <span className="more-drawer-icon">🐛</span>
-            <span className="more-drawer-label">{t('nav_pestAlerts') || 'Pest Alerts'}</span>
-          </NavLink>
-          <NavLink to="/fields" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
-            <span className="more-drawer-icon">🗺️</span>
-            <span className="more-drawer-label">{t('nav_myFields') || 'My Fields'}</span>
-          </NavLink>
-          <NavLink to="/planner" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
-            <span className="more-drawer-icon">📅</span>
-            <span className="more-drawer-label">{t('nav_rotationPlanner') || 'Planner'}</span>
-          </NavLink>
-          <NavLink to="/fertilizer" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
-            <span className="more-drawer-icon">🧪</span>
-            <span className="more-drawer-label">{t('nav_fertilizer') || 'Fertilizer'}</span>
-          </NavLink>
-          <NavLink to="/yield" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
-            <span className="more-drawer-icon">🌾</span>
-            <span className="more-drawer-label">{t('nav_yieldPrediction') || 'Yield'}</span>
-          </NavLink>
-          <NavLink to="/community" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
-            <span className="more-drawer-icon">💬</span>
-            <span className="more-drawer-label">{t('nav_communityChat') || 'Community'}</span>
-          </NavLink>
-          <NavLink to="/feedback" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
-            <span className="more-drawer-icon">📝</span>
-            <span className="more-drawer-label">{t('nav_feedback') || 'Feedback'}</span>
-          </NavLink>
-          <NavLink to="/profile" className={({isActive}) => `more-drawer-item ${isActive ? 'active' : ''}`}>
-            <span className="more-drawer-icon">👤</span>
-            <span className="more-drawer-label">{t('nav_profile') || 'Profile'}</span>
-          </NavLink>
-          <button className="more-drawer-item" onClick={logout}>
-            <span className="more-drawer-icon">🚪</span>
-            <span className="more-drawer-label">{t('nav_logout') || 'Logout'}</span>
-          </button>
+    <header className="bg-white/80 glass-effect sticky top-0 z-50 flex justify-between items-center w-full px-4 md:px-8 py-3 max-w-screen-2xl mx-auto">
+      <div className="flex items-center gap-3">
+        {/* Mobile hamburger */}
+        <button
+          className="md:hidden p-2 rounded-xl hover:bg-surface-container text-on-surface"
+          onClick={onMenuToggle}
+          aria-label="Open menu"
+        >
+          <span className="material-symbols-outlined">menu</span>
+        </button>
+        <div>
+          <h2 className="font-headline font-bold text-lg text-on-surface tracking-tight">{title}</h2>
+          {detectedLoc?.city && (
+            <div className="flex items-center gap-1">
+              <span className="material-symbols-outlined text-primary text-xs">location_on</span>
+              <span className="font-label text-[11px] text-on-surface-variant/60">
+                {detectedLoc.city}{detectedLoc.state ? `, ${detectedLoc.state}` : ''}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      <nav className="bottom-nav">
-        <div className="bottom-nav-inner">
-          <NavLink to="/" end className={({isActive}) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">📊</span><span>{t('nav_home') || 'Home'}</span>
+      <div className="flex items-center gap-2">
+        {/* Language switcher (desktop) */}
+        <div className="hidden md:block">
+          <LanguageSwitcher />
+        </div>
+        {/* Search */}
+        <button className="p-2 rounded-xl hover:bg-surface-container transition-colors hidden sm:flex" title="Search">
+          <span className="material-symbols-outlined text-on-surface-variant">search</span>
+        </button>
+        {/* Notifications */}
+        <button className="p-2 rounded-xl hover:bg-surface-container transition-colors hidden sm:flex relative" title="Notifications">
+          <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full" />
+        </button>
+        {/* User avatar */}
+        {user && (
+          <NavLink
+            to="/profile"
+            className="hidden sm:flex items-center gap-2 bg-surface-container rounded-full pl-1.5 pr-4 py-1 hover:bg-surface-container-high transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs">
+              {(user.name || user.phone || '?')[0].toUpperCase()}
+            </div>
+            <span className="font-label text-xs font-semibold text-on-surface truncate max-w-[100px]">
+              {user.name || user.phone}
+            </span>
           </NavLink>
-          <NavLink to="/recommend" className={({isActive}) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">🌱</span><span>{t('nav_advisory') || 'Crops'}</span>
-          </NavLink>
-          <NavLink to="/market" className={({isActive}) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">📈</span><span>{t('nav_market') || 'Market'}</span>
-          </NavLink>
-          <NavLink to="/disease" className={({isActive}) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">🔬</span><span>{t('nav_disease') || 'Disease'}</span>
-          </NavLink>
+        )}
+      </div>
+    </header>
+  )
+}
+
+/* ─── Bottom Nav (Mobile) ────────────────────────────── */
+function BottomNav() {
+  const [moreOpen, setMoreOpen] = useState(false)
+  const location = useLocation()
+
+  // Close drawer on route change
+  useEffect(() => { setMoreOpen(false) }, [location.pathname])
+
+  // Items for the "more" drawer (everything not in bottom nav)
+  const moreItems = NAV_ITEMS.filter(
+    item => !BOTTOM_NAV_ITEMS.some(b => b.path === item.path)
+  )
+
+  return (
+    <>
+      {/* More drawer overlay */}
+      {moreOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-[140] md:hidden"
+          onClick={() => setMoreOpen(false)}
+        />
+      )}
+
+      {/* More drawer */}
+      <div className={`
+        fixed bottom-0 left-0 right-0 z-[145] md:hidden
+        bg-white rounded-t-3xl shadow-2xl transition-transform duration-300 ease-out
+        ${moreOpen ? 'translate-y-0' : 'translate-y-full'}
+      `}>
+        <div className="flex justify-center py-3 cursor-pointer" onClick={() => setMoreOpen(false)}>
+          <div className="w-10 h-1 bg-outline-variant rounded-full" />
+        </div>
+        <div className="grid grid-cols-4 gap-1.5 px-4 pb-6">
+          {moreItems.map(item => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => `
+                flex flex-col items-center gap-1.5 p-3 rounded-2xl text-center transition-colors
+                ${isActive ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container-low'}
+              `}
+            >
+              <span className="material-symbols-outlined">{item.icon}</span>
+              <span className="font-label text-[10px] font-bold leading-tight">{item.label}</span>
+            </NavLink>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom navigation bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 glass-effect z-[150] bottom-safe-area">
+        <div className="flex justify-around items-center py-1.5 px-2">
+          {BOTTOM_NAV_ITEMS.map(item => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.end}
+              className={({ isActive }) => `
+                flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-2xl min-w-[56px] transition-colors
+                ${isActive ? 'text-primary' : 'text-on-surface-variant/50'}
+              `}
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive ? (
+                    <div className="bg-primary/10 px-4 py-1 rounded-full">
+                      <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>{item.icon}</span>
+                    </div>
+                  ) : (
+                    <span className="material-symbols-outlined text-xl">{item.icon}</span>
+                  )}
+                  <span className="font-label text-[10px] font-bold">{item.label}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+          {/* More button */}
           <button
-            className={`bottom-nav-item ${moreOpen ? 'active' : ''}`}
+            className={`flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-2xl min-w-[56px] transition-colors ${moreOpen ? 'text-primary' : 'text-on-surface-variant/50'}`}
             onClick={() => setMoreOpen(prev => !prev)}
           >
-            <span className="nav-icon">{moreOpen ? '✕' : '☰'}</span><span>{moreOpen ? (t('nav_close') || 'Close') : (t('nav_more') || 'More')}</span>
+            <span className="material-symbols-outlined text-xl">{moreOpen ? 'close' : 'more_horiz'}</span>
+            <span className="font-label text-[10px] font-bold">{moreOpen ? 'Close' : 'More'}</span>
           </button>
         </div>
       </nav>
@@ -185,73 +328,37 @@ function BottomNav() {
   )
 }
 
-function TopBar({ onMenuToggle }) {
-  const location = useLocation()
-  const { t } = useLanguage()
-  const { user } = useAuth()
-  // Use detected location for display
-  let detectedLoc = null;
-  try { detectedLoc = useDetectedLocation(); } catch(e) {}
-
-  const PAGE_TITLES = {
-    '/': t('nav_dashboard'),
-    '/recommend': t('nav_cropAdvisory'),
-    '/disease': t('nav_diseaseDetection') || 'Disease Detection',
-    '/pests': t('nav_pestAlerts') || 'Pest Alerts',
-    '/fields': t('nav_myFields'),
-    '/planner': t('nav_rotationPlanner'),
-    '/fertilizer': t('nav_fertilizer') || 'Fertilizer & Remedies',
-    '/market': t('nav_marketPrices'),
-    '/yield': t('nav_yieldPrediction'),
-    '/community': t('nav_communityChat') || 'Community Chat',
-    '/feedback': t('nav_feedback') || 'Feedback',
-    '/profile': t('topbar_profileSettings'),
-  }
-  const title = PAGE_TITLES[location.pathname] || t('brand_title')
-  const locationLabel = detectedLoc?.city && detectedLoc?.state
-    ? `📍 ${detectedLoc.city}, ${detectedLoc.state}`
-    : detectedLoc?.state ? `📍 ${detectedLoc.state}` : '';
-
-  return (
-    <header className="top-bar">
-      <div className="top-bar-left">
-        <button className="hamburger-btn" onClick={onMenuToggle} aria-label="Open menu">
-          <span></span><span></span><span></span>
-        </button>
-        <div className="top-bar-title">{title}</div>
-      </div>
-      <div className="top-bar-actions">
-        {locationLabel && (
-          <span className="location-badge">{locationLabel}</span>
-        )}
-        {user && (
-          <span className="top-bar-user">
-            👤 {user.name || user.phone}
-          </span>
-        )}
-        <button className="btn btn-sm btn-secondary">🔔</button>
-        <LanguageSwitcher />
-      </div>
-    </header>
-  )
-}
-
+/* ─── Auth Guard ─────────────────────────────────────── */
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
-  if (loading) return <div style={{padding:'2rem',textAlign:'center'}}>Loading...</div>
-  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen bg-surface">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center animate-pulse-soft">
+          <span className="material-symbols-outlined text-primary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>eco</span>
+        </div>
+        <div className="spinner" />
+        <span className="font-label text-sm text-on-surface-variant">Loading Fasal.AI...</span>
+      </div>
+    </div>
+  )
+  if (!isAuthenticated) return <Navigate to="/landing" replace />
   return children
 }
 
+/* ─── App Layout ─────────────────────────────────────── */
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="app-layout">
+    <div className="flex min-h-screen bg-surface">
+      {/* Desktop sidebar */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main className="main-content">
+
+      {/* Main content */}
+      <main className="flex-1 min-w-0 md:ml-0 relative">
         <TopBar onMenuToggle={() => setSidebarOpen(prev => !prev)} />
-        <div className="page-content">
+        <div className="p-4 md:p-8 max-w-screen-2xl mx-auto pb-24 md:pb-8">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/recommend" element={<Recommend />} />
@@ -268,15 +375,19 @@ function AppLayout() {
           </Routes>
         </div>
       </main>
+
+      {/* Mobile bottom nav */}
       <BottomNav />
       <Chatbot />
     </div>
   )
 }
 
+/* ─── Router ─────────────────────────────────────────── */
 function AppRouter() {
   return (
     <Routes>
+      <Route path="/landing" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/*" element={
         <ProtectedRoute>
@@ -287,6 +398,7 @@ function AppRouter() {
   )
 }
 
+/* ─── App Entry ──────────────────────────────────────── */
 function App() {
   return (
     <BrowserRouter>

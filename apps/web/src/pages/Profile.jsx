@@ -12,30 +12,17 @@ export default function Profile() {
   const navigate = useNavigate()
 
   const [profile, setProfile] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    language: 'en',
-    district: '',
-    state: '',
-    role: 'farmer',
-    farm_size: '',
-    crops_grown: '',
+    name: '', phone: '', email: '', language: 'en',
+    district: '', state: '', role: 'farmer', farm_size: '', crops_grown: '',
   })
-
   const [notifications, setNotifications] = useState({
-    push: true, sms: true, whatsapp: false,
-    weather: true, sowing: true, market: true,
+    push: true, sms: true, whatsapp: false, weather: true, sowing: true, market: true,
   })
-
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState({ text: '', type: '' })
 
-  // Load profile on mount
-  useEffect(() => {
-    loadProfile()
-  }, [])
+  useEffect(() => { loadProfile() }, [])
 
   const loadProfile = async () => {
     try {
@@ -43,159 +30,121 @@ export default function Profile() {
       if (data.profile) {
         const p = data.profile
         setProfile({
-          name: p.name || user?.name || '',
-          phone: p.phone || user?.phone || '',
-          email: p.email || user?.email || '',
-          language: p.language || 'en',
-          district: p.district || '',
-          state: p.state || detectedState || '',
-          role: p.role || 'farmer',
-          farm_size: p.farm_size || '',
+          name: p.name || user?.name || '', phone: p.phone || user?.phone || '',
+          email: p.email || user?.email || '', language: p.language || 'en',
+          district: p.district || '', state: p.state || detectedState || '',
+          role: p.role || 'farmer', farm_size: p.farm_size || '',
           crops_grown: Array.isArray(p.crops_grown) ? p.crops_grown.join(', ') : '',
         })
-        if (p.notifications && typeof p.notifications === 'object') {
-          setNotifications(prev => ({ ...prev, ...p.notifications }))
-        }
+        if (p.notifications && typeof p.notifications === 'object') setNotifications(prev => ({ ...prev, ...p.notifications }))
       } else {
-        // No saved profile, use auth user data
-        setProfile(prev => ({
-          ...prev,
-          name: user?.name || '',
-          phone: user?.phone || '',
-        }))
+        setProfile(prev => ({ ...prev, name: user?.name || '', phone: user?.phone || '' }))
       }
-    } catch (err) {
-      console.error('Failed to load profile:', err)
-      setProfile(prev => ({
-        ...prev,
-        name: user?.name || '',
-        phone: user?.phone || '',
-      }))
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { setProfile(prev => ({ ...prev, name: user?.name || '', phone: user?.phone || '' })) }
+    finally { setLoading(false) }
   }
 
   const handleSave = async () => {
-    setSaving(true)
-    setSaveMsg({ text: '', type: '' })
+    setSaving(true); setSaveMsg({ text: '', type: '' })
     try {
-      const payload = {
-        name: profile.name,
-        email: profile.email,
-        district: profile.district,
-        state: profile.state,
-        language: profile.language,
-        role: profile.role,
+      await saveProfile({
+        name: profile.name, email: profile.email, district: profile.district,
+        state: profile.state, language: profile.language, role: profile.role,
         farm_size: profile.farm_size ? parseFloat(profile.farm_size) : null,
-        crops_grown: profile.crops_grown
-          ? profile.crops_grown.split(',').map(c => c.trim()).filter(Boolean)
-          : [],
-        notifications,
-        latitude: latitude || null,
-        longitude: longitude || null,
-      }
-      await saveProfile(payload)
+        crops_grown: profile.crops_grown ? profile.crops_grown.split(',').map(c => c.trim()).filter(Boolean) : [],
+        notifications, latitude: latitude || null, longitude: longitude || null,
+      })
       updateUserName(profile.name)
-      setSaveMsg({ text: '✅ Profile saved successfully!', type: 'success' })
+      setSaveMsg({ text: 'Profile saved successfully!', type: 'success' })
       setTimeout(() => setSaveMsg({ text: '', type: '' }), 3000)
-    } catch (err) {
-      setSaveMsg({ text: `❌ ${err.message}`, type: 'error' })
-    } finally {
-      setSaving(false)
-    }
+    } catch (err) { setSaveMsg({ text: err.message, type: 'error' }) }
+    finally { setSaving(false) }
   }
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete your account? This cannot be undone.')) return
-    try {
-      await deleteProfile()
-      logout()
-      navigate('/login')
-    } catch (err) {
-      setSaveMsg({ text: `❌ ${err.message}`, type: 'error' })
-    }
+    try { await deleteProfile(); logout(); navigate('/login') }
+    catch (err) { setSaveMsg({ text: err.message, type: 'error' }) }
   }
+
+  const inputClass = "w-full bg-surface-container-highest rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none"
 
   if (loading) {
     return (
-      <div className="animate-fade-in" style={{ padding: '2rem', textAlign: 'center' }}>
-        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-        <p>Loading profile...</p>
+      <div className="flex flex-col items-center justify-center py-16 animate-fade-in gap-4">
+        <div className="spinner" /><span className="font-label text-sm text-on-surface-variant">Loading profile...</span>
       </div>
     )
   }
 
   return (
-    <div className="animate-fade-in">
-      {/* Save feedback banner */}
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header */}
+      <div>
+        <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Account Intelligence 👤</h1>
+        <p className="font-label text-sm text-on-surface-variant/60 mt-1">Manage your profile, preferences, and notification settings</p>
+      </div>
+
+      {/* Save feedback */}
       {saveMsg.text && (
-        <div style={{
-          padding: 'var(--sp-3) var(--sp-4)',
-          marginBottom: 'var(--sp-4)',
-          borderRadius: 'var(--radius-md)',
-          background: saveMsg.type === 'success' ? 'rgba(76,175,80,0.1)' : 'rgba(211,47,47,0.1)',
-          border: `1px solid ${saveMsg.type === 'success' ? 'rgba(76,175,80,0.3)' : 'rgba(211,47,47,0.3)'}`,
-          color: saveMsg.type === 'success' ? 'var(--green-600)' : '#d32f2f',
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          transition: 'opacity 0.3s',
-        }}>
+        <div className={`p-4 rounded-2xl flex items-center gap-2 animate-fade-in ${
+          saveMsg.type === 'success' ? 'bg-secondary-container/20 text-secondary' : 'bg-error-container/30 text-error'
+        }`}>
+          <span className="material-symbols-outlined text-sm">{saveMsg.type === 'success' ? 'check_circle' : 'error'}</span>
           {saveMsg.text}
         </div>
       )}
 
-      <div className="grid-2" style={{ gap: 'var(--sp-6)' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Profile Info */}
-        <div className="card">
-          <div className="card-header">
-            <h3>{t('profile_title')}</h3>
-            <span className={`badge badge-green`}>{profile.role}</span>
+        <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
+          <div className="p-5 md:p-6 bg-surface-container-low flex items-center justify-between">
+            <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">person</span> {t('profile_title')}
+            </h3>
+            <span className="smart-chip bg-primary/10 text-primary capitalize">{profile.role}</span>
           </div>
-          <div className="card-body">
-            <div style={{ textAlign: 'center', marginBottom: 'var(--sp-6)' }}>
-              <div style={{
-                width: 80, height: 80, borderRadius: '50%',
-                background: 'linear-gradient(135deg, var(--green-400), var(--green-700))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '2rem', color: 'white', margin: '0 auto var(--sp-3)',
-              }}>🧑‍🌾</div>
-              <h3>{profile.name || 'Your Name'}</h3>
-              <p className="text-sm text-muted">{profile.phone}</p>
+          <div className="p-5 md:p-6 space-y-5">
+            {/* Avatar */}
+            <div className="text-center">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-3xl text-white mx-auto mb-3">
+                <span className="material-symbols-outlined text-3xl">agriculture</span>
+              </div>
+              <h3 className="font-headline font-bold text-on-surface">{profile.name || 'Your Name'}</h3>
+              <p className="font-label text-sm text-on-surface-variant/60">{profile.phone}</p>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">{t('profile_fullName')}</label>
-              <input className="form-input" value={profile.name} onChange={e => setProfile(p => ({...p, name: e.target.value}))} placeholder="Enter your name" />
+            <div className="space-y-1.5">
+              <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">{t('profile_fullName')}</label>
+              <input className={inputClass} value={profile.name} onChange={e => setProfile(p => ({...p, name: e.target.value}))} placeholder="Enter your name" />
             </div>
-            <div className="form-group">
-              <label className="form-label">{t('profile_phone')}</label>
-              <input className="form-input" value={profile.phone} disabled style={{ opacity: 0.6 }} />
+            <div className="space-y-1.5">
+              <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">{t('profile_phone')}</label>
+              <input className={`${inputClass} opacity-60`} value={profile.phone} disabled />
             </div>
-            <div className="form-group">
-              <label className="form-label">Email (for weather alerts)</label>
-              <input className="form-input" type="email" value={profile.email} onChange={e => setProfile(p => ({...p, email: e.target.value}))} placeholder="your@email.com" />
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>Required for email weather alerts via Brevo</span>
+            <div className="space-y-1.5">
+              <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Email</label>
+              <input className={inputClass} type="email" value={profile.email} onChange={e => setProfile(p => ({...p, email: e.target.value}))} placeholder="your@email.com" />
+              <span className="font-label text-[10px] text-on-surface-variant/30">Required for email weather alerts via Brevo</span>
             </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">{t('profile_district')}</label>
-                <input className="form-input" value={profile.district} onChange={e => setProfile(p => ({...p, district: e.target.value}))} placeholder="e.g. Varanasi" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">{t('profile_district')}</label>
+                <input className={inputClass} value={profile.district} onChange={e => setProfile(p => ({...p, district: e.target.value}))} placeholder="e.g. Varanasi" />
               </div>
-              <div className="form-group">
-                <label className="form-label">{t('profile_state')}</label>
-                <input className="form-input" value={profile.state} onChange={e => setProfile(p => ({...p, state: e.target.value}))} placeholder="e.g. Uttar Pradesh" />
+              <div className="space-y-1.5">
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">{t('profile_state')}</label>
+                <input className={inputClass} value={profile.state} onChange={e => setProfile(p => ({...p, state: e.target.value}))} placeholder="e.g. Uttar Pradesh" />
               </div>
             </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Farm Size (acres)</label>
-                <input className="form-input" type="number" step="0.1" min="0" value={profile.farm_size} onChange={e => setProfile(p => ({...p, farm_size: e.target.value}))} placeholder="e.g. 5.5" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Farm Size (acres)</label>
+                <input className={inputClass} type="number" step="0.1" min="0" value={profile.farm_size} onChange={e => setProfile(p => ({...p, farm_size: e.target.value}))} placeholder="e.g. 5.5" />
               </div>
-              <div className="form-group">
-                <label className="form-label">Role</label>
-                <select className="form-select" value={profile.role} onChange={e => setProfile(p => ({...p, role: e.target.value}))}>
+              <div className="space-y-1.5">
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Role</label>
+                <select className={inputClass} value={profile.role} onChange={e => setProfile(p => ({...p, role: e.target.value}))}>
                   <option value="farmer">Farmer</option>
                   <option value="advisor">Agricultural Advisor</option>
                   <option value="researcher">Researcher</option>
@@ -203,15 +152,13 @@ export default function Profile() {
                 </select>
               </div>
             </div>
-
-            <div className="form-group">
-              <label className="form-label">Crops Grown (comma separated)</label>
-              <input className="form-input" value={profile.crops_grown} onChange={e => setProfile(p => ({...p, crops_grown: e.target.value}))} placeholder="e.g. Wheat, Rice, Sugarcane" />
+            <div className="space-y-1.5">
+              <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Crops Grown</label>
+              <input className={inputClass} value={profile.crops_grown} onChange={e => setProfile(p => ({...p, crops_grown: e.target.value}))} placeholder="e.g. Wheat, Rice, Sugarcane" />
             </div>
-
-            <div className="form-group">
-              <label className="form-label">{t('profile_language')}</label>
-              <select className="form-select" value={profile.language} onChange={e => setProfile(p => ({...p, language: e.target.value}))}>
+            <div className="space-y-1.5">
+              <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">{t('profile_language')}</label>
+              <select className={inputClass} value={profile.language} onChange={e => setProfile(p => ({...p, language: e.target.value}))}>
                 <option value="en">English</option>
                 <option value="hi">हिंदी (Hindi)</option>
                 <option value="ta">தமிழ் (Tamil)</option>
@@ -220,120 +167,103 @@ export default function Profile() {
                 <option value="mr">मराठी (Marathi)</option>
               </select>
             </div>
-            <button
-              className="btn btn-primary"
-              style={{ width: '100%', opacity: saving ? 0.7 : 1 }}
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? '⏳ Saving...' : `💾 ${t('profile_save')}`}
+            <button onClick={handleSave} disabled={saving}
+              className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:bg-primary-container transition-all disabled:opacity-60">
+              <span className="material-symbols-outlined">{saving ? 'hourglass_empty' : 'save'}</span>
+              {saving ? 'Saving...' : t('profile_save')}
             </button>
           </div>
         </div>
 
-        {/* Notifications & Settings */}
-        <div>
-          <div className="card" style={{ marginBottom: 'var(--sp-6)' }}>
-            <div className="card-header">
-              <h3>{t('profile_notifications')}</h3>
+        {/* Right column */}
+        <div className="space-y-6">
+          {/* Notifications */}
+          <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
+            <div className="p-5 bg-surface-container-low">
+              <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-sm">notifications</span> {t('profile_notifications')}
+              </h3>
             </div>
-            <div className="card-body">
-              <h4 style={{ marginBottom: 'var(--sp-3)', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Channels</h4>
+            <div className="p-5 space-y-0">
+              <div className="font-label text-[10px] font-bold uppercase text-on-surface-variant/30 tracking-widest mb-2">Channels</div>
               {[
-                { key: 'push', label: '📱 Push Notifications' },
-                { key: 'sms', label: '💬 SMS Notifications' },
-                { key: 'whatsapp', label: '📲 WhatsApp Messages' },
+                { key: 'push', icon: 'smartphone', label: 'Push Notifications' },
+                { key: 'sms', icon: 'sms', label: 'SMS Notifications' },
+                { key: 'whatsapp', icon: 'chat', label: 'WhatsApp Messages' },
               ].map(ch => (
-                <label key={ch.key} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: 'var(--sp-3) 0', borderBottom: '1px solid var(--border-color)', cursor: 'pointer'
-                }}>
-                  <span style={{ fontSize: '0.9rem' }}>{ch.label}</span>
+                <div key={ch.key} className="flex items-center justify-between py-3 border-b border-surface-container-high/40 last:border-0">
+                  <span className="font-label text-sm text-on-surface flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm text-on-surface-variant/50">{ch.icon}</span> {ch.label}
+                  </span>
                   <div onClick={() => setNotifications(n => ({...n, [ch.key]: !n[ch.key]}))}
-                    style={{
-                      width: 44, height: 24, borderRadius: 12,
-                      background: notifications[ch.key] ? 'var(--green-500)' : 'var(--gray-300)',
-                      position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
-                    }}>
-                    <div style={{
-                      width: 18, height: 18, borderRadius: '50%', background: 'white',
-                      position: 'absolute', top: 3,
-                      left: notifications[ch.key] ? 23 : 3,
-                      transition: 'left 0.2s', boxShadow: 'var(--shadow-sm)',
-                    }}></div>
+                    className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${notifications[ch.key] ? 'bg-primary' : 'bg-surface-container-high'}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all shadow-sm ${notifications[ch.key] ? 'left-[22px]' : 'left-0.5'}`} />
                   </div>
-                </label>
+                </div>
               ))}
 
-              <h4 style={{ marginTop: 'var(--sp-5)', marginBottom: 'var(--sp-3)', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Alert Types</h4>
+              <div className="font-label text-[10px] font-bold uppercase text-on-surface-variant/30 tracking-widest mt-4 mb-2">Alert Types</div>
               {[
-                { key: 'weather', label: '🌧 Weather Alerts' },
-                { key: 'sowing', label: '🌱 Sowing Reminders' },
-                { key: 'market', label: '📈 Market Price Alerts' },
+                { key: 'weather', icon: 'cloud', label: 'Weather Alerts' },
+                { key: 'sowing', icon: 'eco', label: 'Sowing Reminders' },
+                { key: 'market', icon: 'trending_up', label: 'Market Price Alerts' },
               ].map(ch => (
-                <label key={ch.key} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: 'var(--sp-3) 0', borderBottom: '1px solid var(--border-color)', cursor: 'pointer'
-                }}>
-                  <span style={{ fontSize: '0.9rem' }}>{ch.label}</span>
+                <div key={ch.key} className="flex items-center justify-between py-3 border-b border-surface-container-high/40 last:border-0">
+                  <span className="font-label text-sm text-on-surface flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm text-on-surface-variant/50">{ch.icon}</span> {ch.label}
+                  </span>
                   <div onClick={() => setNotifications(n => ({...n, [ch.key]: !n[ch.key]}))}
-                    style={{
-                      width: 44, height: 24, borderRadius: 12,
-                      background: notifications[ch.key] ? 'var(--green-500)' : 'var(--gray-300)',
-                      position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
-                    }}>
-                    <div style={{
-                      width: 18, height: 18, borderRadius: '50%', background: 'white',
-                      position: 'absolute', top: 3,
-                      left: notifications[ch.key] ? 23 : 3,
-                      transition: 'left 0.2s', boxShadow: 'var(--shadow-sm)',
-                    }}></div>
+                    className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${notifications[ch.key] ? 'bg-primary' : 'bg-surface-container-high'}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all shadow-sm ${notifications[ch.key] ? 'left-[22px]' : 'left-0.5'}`} />
                   </div>
-                </label>
+                </div>
               ))}
             </div>
           </div>
 
-          <div className="card" style={{ marginBottom: 'var(--sp-6)' }}>
-            <div className="card-header">
-              <h3>🔬 Disease Detection</h3>
-              <span className="badge badge-green">AI</span>
+          {/* Quick Links */}
+          <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
+            <div className="p-5 bg-surface-container-low flex items-center justify-between">
+              <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-sm">shutter_speed</span> Disease Detection
+              </h3>
+              <span className="smart-chip bg-primary/10 text-primary">AI</span>
             </div>
-            <div className="card-body">
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 'var(--sp-3)' }}>
-                Upload a leaf image to detect diseases in your crops. Our AI model supports:
-              </p>
-              <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap', marginBottom: 'var(--sp-4)' }}>
-                <span className="badge" style={{ background: '#FFF8E1', color: '#E65100' }}>🥔 Potato</span>
-                <span className="badge" style={{ background: '#FFF8E1', color: '#E65100' }}>🌽 Corn</span>
-                <span className="badge" style={{ background: '#FFF8E1', color: '#E65100' }}>🌾 Rice</span>
-                <span className="badge" style={{ background: '#FFF8E1', color: '#E65100' }}>🎋 Sugarcane</span>
+            <div className="p-5 space-y-3">
+              <p className="font-label text-sm text-on-surface-variant/60">Upload a leaf image to detect diseases. Our AI supports:</p>
+              <div className="flex flex-wrap gap-2">
+                {['Potato', 'Corn', 'Rice', 'Sugarcane'].map(c => (
+                  <span key={c} className="smart-chip bg-tertiary-fixed text-on-tertiary-fixed-variant">{c}</span>
+                ))}
               </div>
-              <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate('/disease')}>
-                🔬 Go to Disease Detection
+              <button onClick={() => navigate('/disease')}
+                className="w-full py-3 bg-primary text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-primary-container transition-all shadow-md shadow-primary/15">
+                <span className="material-symbols-outlined">shutter_speed</span> Go to Disease Detection
               </button>
             </div>
           </div>
 
-          <div className="card">
-            <div className="card-header">
-              <h3>{t('profile_about')}</h3>
+          {/* About & Delete */}
+          <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
+            <div className="p-5 bg-surface-container-low">
+              <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-sm">info</span> {t('profile_about')}
+              </h3>
             </div>
-            <div className="card-body">
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                <p style={{ marginBottom: 'var(--sp-3)' }}><strong>{t('profile_aboutTitle')}</strong> — SIH 2025 (Problem ID: SIH25010)</p>
-                <p style={{ marginBottom: 'var(--sp-2)' }}>{t('profile_aboutDesc')}</p>
-                <p style={{ marginBottom: 'var(--sp-2)' }}>{t('profile_version')}</p>
+            <div className="p-5 space-y-3">
+              <div className="font-label text-sm text-on-surface-variant/60 space-y-2">
+                <p><strong>{t('profile_aboutTitle')}</strong> — SIH 2025 (Problem ID: SIH25010)</p>
+                <p>{t('profile_aboutDesc')}</p>
+                <p>{t('profile_version')}</p>
                 <p>{t('profile_poweredBy')}</p>
               </div>
-              <div style={{ marginTop: 'var(--sp-4)', display: 'flex', gap: 'var(--sp-2)' }}>
-                <button className="btn btn-secondary btn-sm">{t('profile_export')}</button>
-                <button
-                  className="btn btn-sm"
-                  style={{ background: '#FFEBEE', color: '#C62828' }}
-                  onClick={handleDelete}
-                >
-                  🗑️ Delete Account
+              <div className="flex gap-2 pt-2">
+                <button className="px-4 py-2.5 rounded-full bg-surface-container-low text-on-surface-variant text-xs font-bold hover:bg-surface-container transition-colors">
+                  {t('profile_export')}
+                </button>
+                <button onClick={handleDelete}
+                  className="px-4 py-2.5 rounded-full bg-error/10 text-error text-xs font-bold hover:bg-error/20 transition-colors flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">delete</span> Delete Account
                 </button>
               </div>
             </div>

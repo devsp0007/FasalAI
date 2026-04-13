@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getMarketPrices, predictPrice, getMarketMetadata } from '../services/api'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useLocation } from '../contexts/LocationContext'
 
@@ -14,7 +14,6 @@ export default function Market() {
   const [loading, setLoading] = useState(false)
   const [metadata, setMetadata] = useState(null)
 
-  // Price prediction form — district auto-filled from IP, no market input
   const [predForm, setPredForm] = useState({
     state: detectedState || 'Uttar Pradesh',
     district: detectedCity || '',
@@ -25,30 +24,11 @@ export default function Market() {
   const [prediction, setPrediction] = useState(null)
   const [predLoading, setPredLoading] = useState(false)
 
-  // Load market metadata (states, commodities)
+  useEffect(() => { getMarketMetadata().then(d => setMetadata(d)).catch(() => {}) }, [])
+  useEffect(() => { if (detectedState && !state) setState(detectedState) }, [detectedState])
   useEffect(() => {
-    getMarketMetadata().then(d => setMetadata(d)).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    if (detectedState && !state) setState(detectedState)
-  }, [detectedState])
-
-  // Auto-fill district & market from IP detection
-  useEffect(() => {
-    if (detectedCity) {
-      setPredForm(f => ({
-        ...f,
-        district: f.district || detectedCity,
-        market: f.market || detectedCity,
-      }))
-    }
-    if (detectedState) {
-      setPredForm(f => ({
-        ...f,
-        state: f.state || detectedState,
-      }))
-    }
+    if (detectedCity) setPredForm(f => ({ ...f, district: f.district || detectedCity, market: f.market || detectedCity }))
+    if (detectedState) setPredForm(f => ({ ...f, state: f.state || detectedState }))
   }, [detectedCity, detectedState])
 
   const commodities = metadata?.commodities || ['Wheat', 'Rice', 'Maize', 'Cotton', 'Onion', 'Potato', 'Tomato', 'Sugarcane']
@@ -56,25 +36,16 @@ export default function Market() {
 
   const fetchPrices = async () => {
     setLoading(true)
-    try {
-      const data = await getMarketPrices(commodity, state, '', '', days)
-      setPriceData(data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
+    try { const data = await getMarketPrices(commodity, state, '', '', days); setPriceData(data) }
+    catch (err) { console.error(err) }
+    finally { setLoading(false) }
   }
-
   useEffect(() => { fetchPrices() }, [commodity, state, days])
 
   const handlePredict = async (e) => {
-    e.preventDefault()
-    setPredLoading(true)
-    try {
-      const data = await predictPrice(predForm)
-      setPrediction(data)
-    } catch (err) { console.error(err) }
+    e.preventDefault(); setPredLoading(true)
+    try { const data = await predictPrice(predForm); setPrediction(data) }
+    catch (err) { console.error(err) }
     finally { setPredLoading(false) }
   }
 
@@ -83,159 +54,168 @@ export default function Market() {
     price: p.price_per_quintal || 0,
   })).filter(d => d.price > 0)
 
+  const inputClass = "w-full bg-surface-container-highest rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none"
+
   return (
-    <div className="animate-fade-in">
-      {/* Price Chart */}
-      <div className="card" style={{ marginBottom: 'var(--sp-6)' }}>
-        <div className="card-header">
-          <h3>{t('market_priceTrends')}</h3>
-          <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <select className="form-select" style={{ width: 160 }} value={commodity} onChange={e => setCommodity(e.target.value)}>
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header */}
+      <div>
+        <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Market Intelligence 📈</h1>
+        <p className="font-label text-sm text-on-surface-variant/60 mt-1">Real-time mandi prices and AI-powered price forecasting</p>
+      </div>
+
+      {/* ── Price Chart ── */}
+      <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
+        <div className="p-5 md:p-6 bg-surface-container-low flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">trending_up</span>
+            {t('market_priceTrends')}
+          </h3>
+          <div className="flex flex-wrap gap-2 items-center">
+            <select className={inputClass + " !w-auto !py-2"} value={commodity} onChange={e => setCommodity(e.target.value)}>
               {commodities.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select className="form-select" style={{ width: 160 }} value={state} onChange={e => setState(e.target.value)}>
+            <select className={inputClass + " !w-auto !py-2"} value={state} onChange={e => setState(e.target.value)}>
               <option value="">All States</option>
               {availableStates.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <select className="form-select" style={{ width: 120 }} value={days} onChange={e => setDays(+e.target.value)}>
+            <select className={inputClass + " !w-auto !py-2"} value={days} onChange={e => setDays(+e.target.value)}>
               <option value={30}>30 days</option>
               <option value={90}>90 days</option>
               <option value={180}>6 months</option>
               <option value={365}>1 year</option>
             </select>
-            {priceData?.source === 'agmarknet' && <span className="badge badge-green" style={{ fontSize: '0.6rem' }}>Real Data</span>}
+            {priceData?.source === 'agmarknet' && (
+              <span className="smart-chip bg-primary/10 text-primary">Real Data</span>
+            )}
           </div>
         </div>
-        <div className="card-body">
+        <div className="p-5 md:p-6">
+          {/* Stats banner */}
           {priceData && (
-            <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', gap: 'var(--sp-6)', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div>
-                <div className="text-xs text-muted">{t('market_latestPrice')}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹{priceData.latest_price?.toLocaleString() || '—'}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted">{t('market_trend')}</div>
-                <span className={`badge ${priceData.trend === 'up' ? 'badge-green' : 'badge-red'}`}>
-                  {priceData.trend === 'up' ? '↑' : '↓'} {priceData.trend}
-                </span>
-              </div>
-              <div>
-                <div className="text-xs text-muted">{t('market_crop')}</div>
-                <div className="font-semibold" style={{ textTransform: 'capitalize' }}>{priceData.commodity || priceData.crop}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted">Data Points</div>
-                <div className="font-semibold">{priceData.data_points || chartData.length}</div>
-              </div>
-              {priceData.state && (
-                <div>
-                  <div className="text-xs text-muted">State</div>
-                  <div className="font-semibold">{priceData.state}</div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
+              {[
+                { label: t('market_latestPrice'), value: `₹${priceData.latest_price?.toLocaleString() || '—'}`, big: true },
+                { label: t('market_trend'), value: priceData.trend, isTrend: true },
+                { label: t('market_crop'), value: priceData.commodity || priceData.crop },
+                { label: 'Data Points', value: priceData.data_points || chartData.length },
+                { label: 'State', value: priceData.state || 'All' },
+              ].map((s, i) => (
+                <div key={i} className={`${i === 0 ? 'col-span-2 md:col-span-1' : ''}`}>
+                  <div className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant/40">{s.label}</div>
+                  {s.big ? (
+                    <div className="font-headline font-extrabold text-2xl text-on-surface">{s.value}</div>
+                  ) : s.isTrend ? (
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full font-label text-xs font-bold mt-1 ${
+                      s.value === 'up' ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'
+                    }`}>{s.value === 'up' ? '↑' : '↓'} {s.value}</span>
+                  ) : (
+                    <div className="font-headline font-bold text-sm text-on-surface capitalize">{s.value}</div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
           )}
+
           {loading ? (
-            <div className="loading-container"><div className="spinner"></div></div>
+            <div className="flex items-center justify-center py-12"><div className="spinner" /></div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#43A047" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#43A047" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#006b47" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#006b47" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `₹${v}`} />
-                <Tooltip formatter={v => [`₹${v.toFixed(0)}`, 'Price/Quintal']} />
-                <Area type="monotone" dataKey="price" stroke="#43A047" strokeWidth={2} fill="url(#priceGrad)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e6e9e8" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fontFamily: 'Inter' }} />
+                <YAxis tick={{ fontSize: 11, fontFamily: 'Inter' }} tickFormatter={v => `₹${v}`} />
+                <Tooltip
+                  formatter={v => [`₹${v.toFixed(0)}`, 'Price/Quintal']}
+                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,0.1)', fontFamily: 'Inter' }}
+                />
+                <Area type="monotone" dataKey="price" stroke="#006b47" strokeWidth={2.5} fill="url(#priceGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
       </div>
 
-      {/* Price Prediction */}
-      <div className="card">
-        <div className="card-header">
-          <h3>{t('market_pricePrediction')}</h3>
-          <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
-            <span className="badge badge-blue">XGBoost Model</span>
+      {/* ── Price Prediction ── */}
+      <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
+        <div className="p-5 md:p-6 bg-surface-container-low flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">query_stats</span>
+            {t('market_pricePrediction')}
+          </h3>
+          <div className="flex gap-2">
+            <span className="smart-chip bg-secondary-container text-on-secondary-container">XGBoost Model</span>
             {detectedCity && (
-              <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>
-                📍 {detectedCity}{detectedState ? `, ${detectedState}` : ''}
+              <span className="smart-chip bg-primary/10 text-primary">
+                <span className="material-symbols-outlined text-xs">location_on</span> {detectedCity}
               </span>
             )}
           </div>
         </div>
-        <div className="card-body">
-          <form onSubmit={handlePredict}>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">{t('market_commodity')}</label>
-                <select className="form-select" value={predForm.commodity} onChange={e => setPredForm(f => ({...f, commodity: e.target.value}))}>
+        <div className="p-5 md:p-6">
+          <form onSubmit={handlePredict} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">{t('market_commodity')}</label>
+                <select className={inputClass}
+                  value={predForm.commodity} onChange={e => setPredForm(f => ({...f, commodity: e.target.value}))}>
                   {commodities.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div className="form-group">
-                <label className="form-label">{t('market_state')}</label>
-                <select className="form-select" value={predForm.state} onChange={e => setPredForm(f => ({...f, state: e.target.value}))}>
+              <div className="space-y-1.5">
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">{t('market_state')}</label>
+                <select className={inputClass}
+                  value={predForm.state} onChange={e => setPredForm(f => ({...f, state: e.target.value}))}>
                   {availableStates.length > 0
                     ? availableStates.map(s => <option key={s} value={s}>{s}</option>)
-                    : <option value={predForm.state}>{predForm.state}</option>
-                  }
+                    : <option value={predForm.state}>{predForm.state}</option>}
                 </select>
               </div>
-              <div className="form-group">
-                <label className="form-label">District (Auto-detected)</label>
-                <div style={{
-                  padding: '10px 14px',
-                  background: 'var(--green-50)',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--green-200)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--sp-2)',
-                  minHeight: 42,
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  color: 'var(--green-700)',
-                }}>
-                  <span>📍</span>
-                  <span>{predForm.district || detectedCity || 'Detecting...'}</span>
+              <div className="space-y-1.5">
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">District</label>
+                <div className="bg-secondary-container/20 rounded-xl px-4 py-3 flex items-center gap-2 font-medium text-sm text-primary">
+                  <span className="material-symbols-outlined text-sm">location_on</span>
+                  {predForm.district || detectedCity || 'Detecting...'}
                 </div>
               </div>
             </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Min Price (₹)</label>
-                <input className="form-input" type="number" value={predForm.min_price} onChange={e => setPredForm(f => ({...f, min_price: +e.target.value}))} />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Min Price (₹)</label>
+                <input type="number" className={inputClass}
+                  value={predForm.min_price} onChange={e => setPredForm(f => ({...f, min_price: +e.target.value}))} />
               </div>
-              <div className="form-group">
-                <label className="form-label">Max Price (₹)</label>
-                <input className="form-input" type="number" value={predForm.max_price} onChange={e => setPredForm(f => ({...f, max_price: +e.target.value}))} />
+              <div className="space-y-1.5">
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Max Price (₹)</label>
+                <input type="number" className={inputClass}
+                  value={predForm.max_price} onChange={e => setPredForm(f => ({...f, max_price: +e.target.value}))} />
               </div>
-              <div className="form-group">
-                <label className="form-label">Month</label>
-                <select className="form-select" value={predForm.month} onChange={e => setPredForm(f => ({...f, month: +e.target.value}))}>
+              <div className="space-y-1.5">
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Month</label>
+                <select className={inputClass}
+                  value={predForm.month} onChange={e => setPredForm(f => ({...f, month: +e.target.value}))}>
                   {[...Array(12)].map((_, i) => <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('default', {month:'long'})}</option>)}
                 </select>
               </div>
             </div>
-            <button type="submit" className="btn btn-primary" disabled={predLoading}>
+            <button type="submit" disabled={predLoading}
+              className="w-full sm:w-auto py-3.5 px-8 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:bg-primary-container transition-all disabled:opacity-60">
+              <span className="material-symbols-outlined">{predLoading ? 'hourglass_empty' : 'query_stats'}</span>
               {predLoading ? t('market_predicting') : t('market_predictPrice')}
             </button>
           </form>
 
           {prediction && (
-            <div className="animate-fade-in-up" style={{ marginTop: 'var(--sp-6)', padding: 'var(--sp-6)', background: 'var(--green-50)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
-              <div className="text-sm text-muted" style={{ marginBottom: 4 }}>{t('market_predictedPrice')}</div>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--green-700)' }}>
-                ₹{prediction.predicted_modal_price.toLocaleString()}
-              </div>
-              <div className="text-sm text-muted">{prediction.unit} | {prediction.commodity} | {prediction.market}</div>
+            <div className="mt-6 p-6 md:p-8 bg-gradient-to-br from-primary/5 to-secondary-container/20 rounded-2xl text-center animate-fade-in-up">
+              <div className="font-label text-xs text-on-surface-variant mb-1">{t('market_predictedPrice')}</div>
+              <div className="font-headline font-extrabold text-5xl text-primary">₹{prediction.predicted_modal_price.toLocaleString()}</div>
+              <div className="font-label text-sm text-on-surface-variant/60 mt-2">{prediction.unit} | {prediction.commodity} | {prediction.market}</div>
             </div>
           )}
         </div>

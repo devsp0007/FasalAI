@@ -23,27 +23,19 @@ export default function Recommend() {
   const { t } = useLanguage()
   const { state: detectedState, latitude, longitude } = useLocation()
 
-  // State-based pre-recommendations
   const [states, setStates] = useState([])
   const [stateCrops, setStateCrops] = useState(null)
   const [stateLoading, setStateLoading] = useState(false)
   const [weatherLoading, setWeatherLoading] = useState(false)
 
-  // Load states on mount
   useEffect(() => {
-    getStates()
-      .then(data => setStates(data.states || []))
-      .catch(() => setStates([]))
+    getStates().then(data => setStates(data.states || [])).catch(() => setStates([]))
   }, [])
 
-  // Auto-fill state from detected location
   useEffect(() => {
-    if (detectedState && !form.state) {
-      setForm(prev => ({ ...prev, state: detectedState }))
-    }
+    if (detectedState && !form.state) setForm(prev => ({ ...prev, state: detectedState }))
   }, [detectedState])
 
-  // Fetch real weather and fill form
   async function fillCurrentWeather() {
     const lat = latitude || 25.3176
     const lon = longitude || 82.9739
@@ -56,27 +48,20 @@ export default function Recommend() {
           ...prev,
           temperature: Math.round(current.temperature * 10) / 10,
           humidity: current.humidity || prev.humidity,
-          rainfall: current.rain_1h ? current.rain_1h * 24 * 30 : prev.rainfall, // Estimate monthly
+          rainfall: current.rain_1h ? current.rain_1h * 24 * 30 : prev.rainfall,
         }))
       }
     } catch (err) { console.error(err) }
     setWeatherLoading(false)
   }
 
-  // Fetch state-based crop recommendations when state changes
   useEffect(() => {
-    if (!form.state) {
-      setStateCrops(null)
-      return
-    }
+    if (!form.state) { setStateCrops(null); return }
     setStateLoading(true)
     getCropsByState(form.state)
       .then(data => {
         setStateCrops(data)
-        // Auto-set soil type if available
-        if (data.soil_types && data.soil_types.length > 0 && !form.soil_type) {
-          setForm(prev => ({ ...prev, soil_type: data.soil_types[0] }))
-        }
+        if (data.soil_types?.length > 0 && !form.soil_type) setForm(prev => ({ ...prev, soil_type: data.soil_types[0] }))
       })
       .catch(() => setStateCrops(null))
       .finally(() => setStateLoading(false))
@@ -84,163 +69,157 @@ export default function Recommend() {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setForm(prev => ({
-      ...prev,
-      [name]: ['season', 'previous_crop', 'state', 'soil_type'].includes(name)
-        ? value
-        : parseFloat(value) || 0
-    }))
+    setForm(prev => ({ ...prev, [name]: ['season', 'previous_crop', 'state', 'soil_type'].includes(name) ? value : parseFloat(value) || 0 }))
   }
 
-  const handlePreset = (key) => {
-    const preset = PRESETS[key]
-    setForm(prev => ({ ...prev, ...preset }))
-  }
+  const handlePreset = (key) => setForm(prev => ({ ...prev, ...PRESETS[key] }))
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     try {
       const data = await recommendCrop({
-        nitrogen: form.nitrogen,
-        phosphorus: form.phosphorus,
-        potassium: form.potassium,
-        temperature: form.temperature,
-        humidity: form.humidity,
-        ph: form.ph,
-        rainfall: form.rainfall,
-        season: form.season,
-        previous_crop: form.previous_crop || null,
-        state: form.state || null,
-        soil_type: form.soil_type || null,
+        nitrogen: form.nitrogen, phosphorus: form.phosphorus, potassium: form.potassium,
+        temperature: form.temperature, humidity: form.humidity, ph: form.ph, rainfall: form.rainfall,
+        season: form.season, previous_crop: form.previous_crop || null,
+        state: form.state || null, soil_type: form.soil_type || null,
       })
       setResult(data)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { setError(err.message) }
+    finally { setLoading(false) }
   }
 
-  const soilTypes = stateCrops?.soil_types?.length > 0
-    ? stateCrops.soil_types
-    : SOIL_TYPES_FALLBACK
+  const soilTypes = stateCrops?.soil_types?.length > 0 ? stateCrops.soil_types : SOIL_TYPES_FALLBACK
 
   return (
-    <div className="animate-fade-in">
-      <div className="grid-2" style={{ gridTemplateColumns: '1fr 1.2fr', gap: 'var(--sp-6)' }}>
-        {/* Input Form */}
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <div className="card">
-            <div className="card-header">
-              <h3>{t('rec_soilWeatherInput')}</h3>
+          <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Precision Advisory 🛰️</h1>
+          <p className="font-label text-sm text-on-surface-variant/60 mt-1">AI-powered crop recommendations based on your soil & weather data</p>
+        </div>
+        <button type="button" onClick={fillCurrentWeather} disabled={weatherLoading}
+          className="smart-chip bg-primary/10 text-primary hover:bg-primary/15 transition-colors cursor-pointer">
+          <span className="material-symbols-outlined text-sm">my_location</span>
+          {weatherLoading ? 'Loading...' : 'Auto-fill Weather'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* ── Input Form ─────────────────────── */}
+        <div className="lg:col-span-5">
+          <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
+            <div className="p-6 bg-surface-container-low">
+              <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">science</span>
+                Soil Telemetry 🧪
+              </h3>
+              <p className="font-label text-xs text-on-surface-variant/60 mt-1">Input current laboratory readings</p>
             </div>
-            <div className="card-body">
-              {/* Location Section */}
-              <div className="form-label" style={{ marginBottom: 'var(--sp-3)', color: 'var(--green-700)', fontWeight: 700 }}>
-                📍 Location
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">State</label>
-                  <select className="form-select" name="state" value={form.state} onChange={handleChange}>
+            <div className="p-6 space-y-5">
+              {/* Location */}
+              <div className="space-y-3">
+                <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-xs text-primary">location_on</span> Location
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <select name="state" value={form.state} onChange={handleChange}
+                    className="w-full bg-surface-container-highest rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none">
                     <option value="">Select State</option>
-                    {states.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
+                    {states.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Soil Type</label>
-                  <select className="form-select" name="soil_type" value={form.soil_type} onChange={handleChange}>
-                    <option value="">Select Soil Type</option>
-                    {soilTypes.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
+                  <select name="soil_type" value={form.soil_type} onChange={handleChange}
+                    className="w-full bg-surface-container-highest rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                    <option value="">Select Soil</option>
+                    {soilTypes.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
 
               {/* Presets */}
-              <div style={{ marginBottom: 'var(--sp-5)', marginTop: 'var(--sp-3)' }}>
-                <label className="form-label">{t('rec_quickPresets')}</label>
-                <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+              <div className="space-y-2">
+                <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">{t('rec_quickPresets')}</label>
+                <div className="flex flex-wrap gap-2">
                   {Object.entries(PRESETS).map(([key, preset]) => (
-                    <button key={key} className="btn btn-sm btn-secondary" onClick={() => handlePreset(key)}>
+                    <button key={key} onClick={() => handlePreset(key)}
+                      className="px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant text-xs font-bold hover:bg-surface-container-high transition-colors">
                       {preset.label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit}>
-                <div className="form-label" style={{ marginBottom: 'var(--sp-3)', color: 'var(--green-700)', fontWeight: 700 }}>
-                   {t('rec_soilNutrients')}
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">{t('rec_nitrogen')}</label>
-                    <input className="form-input" type="number" name="nitrogen" value={form.nitrogen} onChange={handleChange} step="0.1" />
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Soil NPK */}
+                <div className="space-y-3">
+                  <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-xs text-primary">science</span> {t('rec_soilNutrients')}
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { name: 'nitrogen', label: 'N', value: form.nitrogen },
+                      { name: 'phosphorus', label: 'P', value: form.phosphorus },
+                      { name: 'potassium', label: 'K', value: form.potassium },
+                    ].map(f => (
+                      <div key={f.name} className="bg-surface-container-low rounded-2xl p-3 text-center">
+                        <span className="block text-[10px] font-bold text-on-surface-variant/40 mb-1 uppercase">{f.label}</span>
+                        <input type="number" name={f.name} value={f.value} onChange={handleChange} step="0.1"
+                          className="w-full bg-transparent text-center font-headline font-bold text-primary p-0 focus:ring-0 focus:outline-none text-lg" />
+                      </div>
+                    ))}
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">{t('rec_phosphorus')}</label>
-                    <input className="form-input" type="number" name="phosphorus" value={form.phosphorus} onChange={handleChange} step="0.1" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">{t('rec_potassium')}</label>
-                    <input className="form-input" type="number" name="potassium" value={form.potassium} onChange={handleChange} step="0.1" />
-                  </div>
-                </div>
-                <div className="form-group">
-                    <label className="form-label">{t('rec_soilPh')}</label>
-                  <input className="form-input" type="number" name="ph" value={form.ph} onChange={handleChange} step="0.1" min="0" max="14" />
-                </div>
-
-                <div className="form-label" style={{ marginBottom: 'var(--sp-3)', color: 'var(--green-700)', fontWeight: 700, marginTop: 'var(--sp-4)' }}>
-                   {t('rec_weatherConditions')}
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">{t('rec_temperature')}</label>
-                    <input className="form-input" type="number" name="temperature" value={form.temperature} onChange={handleChange} step="0.1" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">{t('rec_humidity')}</label>
-                    <input className="form-input" type="number" name="humidity" value={form.humidity} onChange={handleChange} step="0.1" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">{t('rec_rainfall')}</label>
-                    <input className="form-input" type="number" name="rainfall" value={form.rainfall} onChange={handleChange} step="0.1" />
+                  <div className="space-y-1">
+                    <label className="font-label text-xs font-semibold text-on-surface-variant/60">{t('rec_soilPh')}</label>
+                    <input type="number" name="ph" value={form.ph} onChange={handleChange} step="0.1" min="0" max="14"
+                      className="w-full bg-surface-container-highest rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none" />
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">{t('rec_season')}</label>
-                    <select className="form-select" name="season" value={form.season} onChange={handleChange}>
-                      <option value="kharif">Kharif (Jun-Oct)</option>
-                      <option value="rabi">Rabi (Nov-Mar)</option>
-                      <option value="zaid">Zaid (Mar-Jun)</option>
-                    </select>
+                {/* Weather */}
+                <div className="space-y-3">
+                  <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-xs text-primary">wb_sunny</span> {t('rec_weatherConditions')}
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { name: 'temperature', label: t('rec_temperature'), val: form.temperature, unit: '°C' },
+                      { name: 'humidity', label: t('rec_humidity'), val: form.humidity, unit: '%' },
+                      { name: 'rainfall', label: t('rec_rainfall'), val: form.rainfall, unit: 'mm' },
+                    ].map(f => (
+                      <div key={f.name} className="space-y-1">
+                        <label className="font-label text-[10px] font-semibold text-on-surface-variant/50">{f.label}</label>
+                        <input type="number" name={f.name} value={f.val} onChange={handleChange} step="0.1"
+                          className="w-full bg-surface-container-highest rounded-xl px-3 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none" />
+                      </div>
+                    ))}
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">{t('rec_previousCrop')}</label>
-                    <select className="form-select" name="previous_crop" value={form.previous_crop || ''} onChange={handleChange}>
-                      <option value="">None / Unknown</option>
-                      <option value="rice">Rice</option>
-                      <option value="wheat">Wheat</option>
-                      <option value="maize">Maize</option>
-                      <option value="cotton">Cotton</option>
-                      <option value="chickpea">Chickpea</option>
-                      <option value="mungbean">Mungbean</option>
-                      <option value="sugarcane">Sugarcane</option>
-                      <option value="potato">Potato</option>
-                    </select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="font-label text-[10px] font-semibold text-on-surface-variant/50">{t('rec_season')}</label>
+                      <select name="season" value={form.season} onChange={handleChange}
+                        className="w-full bg-surface-container-highest rounded-xl px-3 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                        <option value="kharif">Kharif (Jun-Oct)</option>
+                        <option value="rabi">Rabi (Nov-Mar)</option>
+                        <option value="zaid">Zaid (Mar-Jun)</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-label text-[10px] font-semibold text-on-surface-variant/50">{t('rec_previousCrop')}</label>
+                      <select name="previous_crop" value={form.previous_crop || ''} onChange={handleChange}
+                        className="w-full bg-surface-container-highest rounded-xl px-3 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none">
+                        <option value="">None</option>
+                        {['rice','wheat','maize','cotton','chickpea','mungbean','sugarcane','potato'].map(c =>
+                          <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>
+                        )}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
-                <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 'var(--sp-2)' }} disabled={loading}>
+                <button type="submit" disabled={loading}
+                  className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:bg-primary-container transition-all disabled:opacity-60">
+                  <span className="material-symbols-outlined">{loading ? 'hourglass_empty' : 'auto_awesome'}</span>
                   {loading ? t('rec_analyzing') : t('rec_getRecommendations')}
                 </button>
               </form>
@@ -248,36 +227,28 @@ export default function Recommend() {
           </div>
         </div>
 
-        {/* Results */}
-        <div>
-          {/* State-based pre-recommendations */}
-          {stateCrops && stateCrops.crops && stateCrops.crops.length > 0 && !result && (
-            <div className="card animate-fade-in" style={{ marginBottom: 'var(--sp-4)' }}>
-              <div className="card-header">
-                <h3>🌍 Best Crops for {form.state}</h3>
-                {stateCrops.climate && <span className="badge badge-green">{stateCrops.climate.split(',')[0]}</span>}
+        {/* ── Results ─────────────────────── */}
+        <div className="lg:col-span-7 space-y-4">
+          {/* State crops */}
+          {stateCrops?.crops?.length > 0 && !result && (
+            <div className="bg-white rounded-2xl editorial-shadow overflow-hidden animate-fade-in">
+              <div className="p-5 bg-surface-container-low flex items-center justify-between">
+                <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">public</span> Best Crops for {form.state}
+                </h3>
+                {stateCrops.climate && <span className="smart-chip bg-primary/10 text-primary">{stateCrops.climate.split(',')[0]}</span>}
               </div>
-              <div className="card-body">
-                <p className="text-sm text-muted" style={{ marginBottom: 'var(--sp-4)' }}>
-                  Based on your state's climate and soil. Enter soil details above for more accurate AI-powered results.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 'var(--sp-3)' }}>
+              <div className="p-5">
+                <p className="text-sm text-on-surface-variant/60 mb-4">Based on your state's climate and soil. Enter soil details for more accurate AI-powered results.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {stateCrops.crops.slice(0, 12).map((crop, i) => (
-                    <div key={i} style={{
-                      background: 'var(--green-50)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: 'var(--sp-3)',
-                      border: '1px solid var(--green-200)',
-                    }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>
-                        🌱 {crop.name || crop}
+                    <div key={i} className="bg-secondary-container/20 rounded-2xl p-3 hover:bg-secondary-container/35 transition-colors">
+                      <div className="font-headline font-bold text-sm text-on-surface flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-primary text-sm">eco</span>
+                        {crop.name || crop}
                       </div>
-                      {crop.season && (
-                        <div className="text-xs text-muted">📅 {crop.season}</div>
-                      )}
-                      {crop.reason && (
-                        <div className="text-xs text-secondary" style={{ marginTop: 2 }}>{crop.reason}</div>
-                      )}
+                      {crop.season && <div className="font-label text-[10px] text-on-surface-variant/60 mt-1">{crop.season}</div>}
+                      {crop.reason && <div className="font-label text-[10px] text-secondary mt-0.5">{crop.reason}</div>}
                     </div>
                   ))}
                 </div>
@@ -286,112 +257,111 @@ export default function Recommend() {
           )}
 
           {stateLoading && (
-            <div className="loading-container" style={{ marginBottom: 'var(--sp-4)' }}>
-              <div className="spinner"></div>
-              <span>Loading state recommendations...</span>
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <div className="spinner" /><span className="font-label text-sm text-on-surface-variant/60">Loading state recommendations...</span>
             </div>
           )}
 
           {error && (
-            <div className="card animate-fade-in" style={{ borderColor: 'var(--danger)', marginBottom: 'var(--sp-4)' }}>
-              <div className="card-body" style={{ color: 'var(--danger)' }}>
-                ❌ {error}
-              </div>
+            <div className="bg-error-container/30 text-on-error-container p-4 rounded-2xl flex items-center gap-2 animate-fade-in">
+              <span className="material-symbols-outlined text-error">error</span> {error}
             </div>
           )}
 
           {!result && !loading && !stateCrops && (
-            <div className="empty-state">
-              <div className="empty-icon">🌱</div>
-              <h3>{t('rec_enterData')}</h3>
-              <p className="text-secondary">{t('rec_enterDataDesc')}</p>
-              <p className="text-sm text-muted" style={{ marginTop: 'var(--sp-2)' }}>
-                💡 Tip: Select your state first to see location-based crop suggestions!
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-primary text-4xl">eco</span>
+              </div>
+              <h3 className="font-headline font-bold text-lg text-on-surface mb-2">{t('rec_enterData')}</h3>
+              <p className="text-sm text-on-surface-variant/60 max-w-sm">{t('rec_enterDataDesc')}</p>
+              <p className="text-xs text-on-surface-variant/40 mt-3 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm text-tertiary">lightbulb</span>
+                Select your state first to see location-based crop suggestions!
               </p>
             </div>
           )}
 
           {loading && (
-            <div className="loading-container">
-              <div className="spinner"></div>
-              <span>{t('rec_runningModel')}</span>
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
+              <div className="spinner" /><span className="font-label text-sm text-on-surface-variant">{t('rec_runningModel')}</span>
             </div>
           )}
 
           {result && !loading && (
-            <div className="animate-fade-in-up">
-              <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h2>{t('rec_topRecommendations')}</h2>
-                <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
-                  <span className="badge badge-green">{result.inference_ms}ms</span>
+            <div className="space-y-4 animate-fade-in-up stagger-children">
+              <div className="flex items-center justify-between px-1">
+                <h2 className="font-headline text-xl font-extrabold text-on-surface">{t('rec_topRecommendations')}</h2>
+                <div className="flex gap-2">
+                  <span className="smart-chip bg-primary/10 text-primary">{result.inference_ms}ms</span>
                   {result.dataset_version === 'v2_state_aware' && (
-                    <span className="badge" style={{ background: '#E3F2FD', color: '#1565C0' }}>State-Aware</span>
+                    <span className="smart-chip bg-secondary-container text-on-secondary-container">State-Aware</span>
                   )}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
-                {result.recommendations.map((rec, i) => (
-                  <div key={rec.crop} className={`reco-card rank-${rec.rank} animate-fade-in-up stagger-${i+1}`}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--sp-4)' }}>
-                      <div style={{ display: 'flex', gap: 'var(--sp-4)', alignItems: 'flex-start' }}>
-                        <div className={`reco-rank rank-${rec.rank}`}>#{rec.rank}</div>
-                        <div>
-                          <div className="reco-crop-name">{rec.crop}</div>
-                          <span className="badge badge-green" style={{ marginTop: 4 }}>{rec.crop_family}</span>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div className="reco-score">{rec.confidence_pct}%</div>
-                        <div className="text-xs text-muted">confidence</div>
+              {result.recommendations.map((rec, i) => (
+                <div key={rec.crop} className={`bg-white rounded-2xl p-5 md:p-6 editorial-shadow transition-all hover:-translate-y-1 duration-300 ${
+                  rec.rank === 1 ? 'ring-2 ring-primary/20 bg-gradient-to-br from-white to-primary/[0.03]' : ''
+                }`}>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex gap-3 items-start">
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${
+                        rec.rank === 1 ? 'bg-primary text-white' : rec.rank === 2 ? 'bg-primary/10 text-primary' : 'bg-surface-container text-on-surface-variant'
+                      }`}>#{rec.rank}</div>
+                      <div>
+                        <div className="font-headline font-extrabold text-xl text-on-surface capitalize">{rec.crop}</div>
+                        <span className="smart-chip bg-secondary-container/50 text-on-secondary-container mt-1">{rec.crop_family}</span>
                       </div>
                     </div>
-
-                    <div style={{ marginTop: 'var(--sp-4)' }}>
-                      <div className="score-bar-container">
-                        <div className="score-bar" style={{ width: `${rec.confidence_pct}%` }}></div>
-                      </div>
+                    <div className="text-right">
+                      <div className="font-headline font-extrabold text-2xl text-primary">{rec.confidence_pct}%</div>
+                      <div className="font-label text-[10px] text-on-surface-variant/50">confidence</div>
                     </div>
-
-                    <p style={{ marginTop: 'var(--sp-3)', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                      💡 {rec.reason}
-                    </p>
-
-                    <div style={{ marginTop: 'var(--sp-4)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--sp-3)' }}>
-                      <div style={{ background: 'var(--green-50)', padding: 'var(--sp-3)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-                        <div className="text-xs text-muted" style={{ marginBottom: 2 }}>📅 Sowing Window</div>
-                        <div className="font-semibold text-sm">{rec.sowing_window.start} — {rec.sowing_window.end}</div>
-                      </div>
-                      <div style={{ background: '#FFF8E1', padding: 'var(--sp-3)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-                        <div className="text-xs text-muted" style={{ marginBottom: 2 }}>🧪 N-P-K (kg/ha)</div>
-                        <div className="font-semibold text-sm">{rec.fertilizer.nitrogen_kg_ha} - {rec.fertilizer.phosphorus_kg_ha} - {rec.fertilizer.potassium_kg_ha}</div>
-                      </div>
-                      <div style={{ background: '#E3F2FD', padding: 'var(--sp-3)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-                        <div className="text-xs text-muted" style={{ marginBottom: 2 }}>📊 Base Score</div>
-                        <div className="font-semibold text-sm">{(rec.base_score * 100).toFixed(1)}%</div>
-                      </div>
-                    </div>
-
-                    {rec.adjustments.length > 0 && (
-                      <div style={{ marginTop: 'var(--sp-3)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {rec.adjustments.map((adj, j) => (
-                          <span key={j} className={`badge ${adj.value > 0 ? 'badge-green' : 'badge-amber'}`} style={{ marginRight: 4, marginBottom: 4 }}>
-                            {adj.rule.replace(/_/g, ' ')}: {adj.value > 0 ? '+' : ''}{adj.value}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
-                ))}
-              </div>
 
-              <div className="card" style={{ marginTop: 'var(--sp-4)' }}>
-                <div className="card-body text-sm text-muted">
-                  <strong>Model:</strong> {result.model_version} | <strong>Inference:</strong> {result.inference_ms}ms |
-                  <strong> Input:</strong> N={result.input_summary.soil.N}, P={result.input_summary.soil.P}, K={result.input_summary.soil.K}, pH={result.input_summary.soil['pH']}
-                  {result.input_summary.state && <> | <strong>State:</strong> {result.input_summary.state}</>}
-                  {result.input_summary.soil_type && <> | <strong>Soil:</strong> {result.input_summary.soil_type}</>}
+                  {/* Progress bar */}
+                  <div className="mt-4 h-2 w-full bg-surface-container-low rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-primary to-primary-container rounded-full transition-all duration-700" style={{ width: `${rec.confidence_pct}%` }} />
+                  </div>
+
+                  <p className="mt-3 text-sm text-on-surface-variant/70 leading-relaxed flex items-start gap-2">
+                    <span className="material-symbols-outlined text-tertiary text-sm mt-0.5 flex-shrink-0">lightbulb</span>
+                    {rec.reason}
+                  </p>
+
+                  <div className="mt-4 grid grid-cols-3 gap-3">
+                    <div className="bg-surface-container-low p-3 rounded-xl text-center">
+                      <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase mb-1">Sowing</div>
+                      <div className="font-headline font-bold text-xs">{rec.sowing_window.start} — {rec.sowing_window.end}</div>
+                    </div>
+                    <div className="bg-tertiary-fixed/20 p-3 rounded-xl text-center">
+                      <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase mb-1">N-P-K</div>
+                      <div className="font-headline font-bold text-xs">{rec.fertilizer.nitrogen_kg_ha}-{rec.fertilizer.phosphorus_kg_ha}-{rec.fertilizer.potassium_kg_ha}</div>
+                    </div>
+                    <div className="bg-secondary-container/20 p-3 rounded-xl text-center">
+                      <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase mb-1">Base Score</div>
+                      <div className="font-headline font-bold text-xs">{(rec.base_score * 100).toFixed(1)}%</div>
+                    </div>
+                  </div>
+
+                  {rec.adjustments.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {rec.adjustments.map((adj, j) => (
+                        <span key={j} className={`smart-chip ${adj.value > 0 ? 'bg-primary/10 text-primary' : 'bg-tertiary-fixed/30 text-on-tertiary-fixed-variant'}`}>
+                          {adj.rule.replace(/_/g, ' ')}: {adj.value > 0 ? '+' : ''}{adj.value}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
+              ))}
+
+              <div className="bg-surface-container-low rounded-2xl p-4 font-label text-xs text-on-surface-variant/50">
+                <strong>Model:</strong> {result.model_version} | <strong>Inference:</strong> {result.inference_ms}ms |
+                <strong> Input:</strong> N={result.input_summary.soil.N}, P={result.input_summary.soil.P}, K={result.input_summary.soil.K}, pH={result.input_summary.soil['pH']}
+                {result.input_summary.state && <> | <strong>State:</strong> {result.input_summary.state}</>}
+                {result.input_summary.soil_type && <> | <strong>Soil:</strong> {result.input_summary.soil_type}</>}
               </div>
             </div>
           )}

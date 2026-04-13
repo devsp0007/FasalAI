@@ -3,9 +3,9 @@ import { useLanguage } from '../contexts/LanguageContext'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const CROP_COLORS = {
-  rice: '#43A047', wheat: '#FF9800', maize: '#FFC107', cotton: '#E91E63',
-  chickpea: '#795548', lentil: '#9C27B0', mustard: '#CDDC39', potato: '#8D6E63',
-  sugarcane: '#26A69A', mungbean: '#66BB6A', fallow: '#BDBDBD',
+  rice: '#006b47', wheat: '#a36a00', maize: '#825400', cotton: '#ba1a1a',
+  chickpea: '#3c6842', lentil: '#643f00', mustard: '#825400', potato: '#6e7a71',
+  sugarcane: '#005235', mungbean: '#006b47', fallow: '#bdcac0',
 }
 
 const DEMO_ROTATIONS = [
@@ -34,90 +34,70 @@ export default function Planner() {
   const { t } = useLanguage()
 
   return (
-    <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-6)' }}>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2>{t('planner_title')}</h2>
-          <p className="text-sm text-muted">{t('planner_description')} {year}</p>
+          <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Rotation Planner 🌿</h1>
+          <p className="font-label text-sm text-on-surface-variant/60 mt-1">{t('planner_description')} {year}</p>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
-          <button className="btn btn-secondary btn-sm">⬅ {year - 1}</button>
-          <button className="btn btn-primary btn-sm">{year}</button>
-          <button className="btn btn-secondary btn-sm">{year + 1} ➡</button>
+        <div className="flex gap-2">
+          <button className="px-4 py-2.5 rounded-full bg-surface-container-low text-on-surface-variant text-sm font-bold hover:bg-surface-container transition-colors">← {year - 1}</button>
+          <button className="px-5 py-2.5 rounded-full bg-primary text-white text-sm font-bold shadow-md shadow-primary/20">{year}</button>
+          <button className="px-4 py-2.5 rounded-full bg-surface-container-low text-on-surface-variant text-sm font-bold hover:bg-surface-container transition-colors">{year + 1} →</button>
         </div>
       </div>
 
       {/* Season Legend */}
-      <div className="card" style={{ marginBottom: 'var(--sp-4)' }}>
-        <div className="card-body" style={{ padding: 'var(--sp-3) var(--sp-6)', display: 'flex', gap: 'var(--sp-6)', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span className="text-sm font-semibold">Seasons:</span>
-          <span className="badge badge-blue">❄ Rabi (Nov-Mar)</span>
-          <span className="badge badge-green">🌧 Kharif (Jun-Oct)</span>
-          <span className="badge badge-amber">☀ Zaid (Mar-Jun)</span>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
-            {Object.entries(CROP_COLORS).filter(([k]) => k !== 'fallow').map(([crop, color]) => (
-              <span key={crop} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.7rem', fontWeight: 600 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 3, background: color }}></span>
-                {crop}
-              </span>
-            ))}
-          </div>
+      <div className="bg-white rounded-2xl editorial-shadow p-4 flex flex-wrap gap-3 items-center">
+        <span className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest">Seasons:</span>
+        <span className="smart-chip bg-secondary-container text-on-secondary-container">❄ Rabi (Nov-Mar)</span>
+        <span className="smart-chip bg-primary/10 text-primary">🌧 Kharif (Jun-Oct)</span>
+        <span className="smart-chip bg-tertiary-fixed text-on-tertiary-fixed-variant">☀ Zaid (Mar-Jun)</span>
+        <div className="hidden md:flex ml-auto gap-3 flex-wrap">
+          {Object.entries(CROP_COLORS).filter(([k]) => k !== 'fallow').map(([crop, color]) => (
+            <span key={crop} className="flex items-center gap-1.5 font-label text-[10px] font-bold capitalize">
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: color }} />
+              {crop}
+            </span>
+          ))}
         </div>
       </div>
 
       {/* Calendar Grid */}
-      <div className="card">
-        <div className="card-body" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
+      <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', width: 140, borderBottom: '2px solid var(--border-color)' }}>
-                  Plot
-                </th>
+                <th className="text-left p-3 md:p-4 font-label text-xs uppercase tracking-wider text-on-surface-variant/50 bg-surface-container-low w-32">Plot</th>
                 {MONTHS.map(m => (
-                  <th key={m} style={{ padding: '10px 4px', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', borderBottom: '2px solid var(--border-color)', fontWeight: 600 }}>
-                    {m}
-                  </th>
+                  <th key={m} className="text-center p-2 md:p-3 font-label text-[10px] uppercase tracking-wider text-on-surface-variant/50 bg-surface-container-low">{m}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {DEMO_ROTATIONS.map((row) => (
-                <tr key={row.plot} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px 16px', fontWeight: 600, fontSize: '0.85rem' }}>
-                    {row.plot}
-                  </td>
+              {DEMO_ROTATIONS.map(row => (
+                <tr key={row.plot} className="border-b border-surface-container-high/40 last:border-0">
+                  <td className="p-3 md:p-4 font-headline font-bold text-sm text-on-surface">{row.plot}</td>
                   {MONTHS.map((_, mi) => {
                     const entry = row.entries.find(e => mi >= e.start && mi < e.end)
-                    if (!entry) return <td key={mi} style={{ padding: 4 }}></td>
+                    if (!entry) return <td key={mi} className="p-1" />
                     if (mi !== entry.start) return null
                     const span = entry.end - entry.start
-                    const color = CROP_COLORS[entry.crop] || '#9E9E9E'
+                    const color = CROP_COLORS[entry.crop] || '#6e7a71'
                     return (
-                      <td key={mi} colSpan={span} style={{ padding: 4 }}>
-                        <div style={{
-                          background: entry.crop === 'fallow' ? '#F5F5F5' : `${color}15`,
-                          border: `2px solid ${entry.crop === 'fallow' ? '#E0E0E0' : color}`,
-                          borderRadius: 'var(--radius-md)',
-                          padding: '8px 12px',
-                          textAlign: 'center',
-                          cursor: 'pointer',
-                          transition: 'all var(--transition-fast)',
-                          minHeight: 50,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)' }}
-                        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none' }}
+                      <td key={mi} colSpan={span} className="p-1">
+                        <div
+                          className="gantt-bar cursor-pointer hover:scale-[1.03] transition-transform min-h-[50px] flex-col"
+                          style={{
+                            background: entry.crop === 'fallow' ? '#f2f4f3' : `${color}15`,
+                            color: entry.crop === 'fallow' ? '#6e7a71' : color,
+                            border: `2px solid ${entry.crop === 'fallow' ? '#e6e9e8' : `${color}40`}`,
+                          }}
                         >
-                          <div style={{ fontWeight: 700, fontSize: '0.8rem', color: entry.crop === 'fallow' ? '#9E9E9E' : color, textTransform: 'capitalize' }}>
-                            {entry.crop}
-                          </div>
-                          {entry.season && (
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 2 }}>{entry.season}</div>
-                          )}
+                          <div className="font-headline font-bold text-xs capitalize">{entry.crop}</div>
+                          {entry.season && <div className="font-label text-[9px] opacity-60 mt-0.5">{entry.season}</div>}
                         </div>
                       </td>
                     )
@@ -130,18 +110,18 @@ export default function Planner() {
       </div>
 
       {/* Tips */}
-      <div className="card" style={{ marginTop: 'var(--sp-4)' }}>
-        <div className="card-body" style={{ display: 'flex', gap: 'var(--sp-4)', alignItems: 'flex-start' }}>
-          <div style={{ fontSize: '1.5rem' }}>💡</div>
-          <div>
-            <h4>{t('planner_rotationTips')}</h4>
-            <ul style={{ marginTop: 'var(--sp-2)', fontSize: '0.85rem', color: 'var(--text-secondary)', paddingLeft: 'var(--sp-5)' }}>
-              <li>{t('planner_tip1')}</li>
-              <li>{t('planner_tip2')}</li>
-              <li>{t('planner_tip3')}</li>
-              <li>{t('planner_tip4')}</li>
-            </ul>
-          </div>
+      <div className="bg-white rounded-2xl editorial-shadow p-5 md:p-6 flex gap-4 items-start">
+        <div className="w-11 h-11 rounded-2xl bg-tertiary-fixed/30 flex items-center justify-center flex-shrink-0">
+          <span className="material-symbols-outlined text-tertiary">lightbulb</span>
+        </div>
+        <div>
+          <h4 className="font-headline font-bold text-on-surface mb-2">{t('planner_rotationTips')}</h4>
+          <ul className="space-y-1.5 font-label text-sm text-on-surface-variant/60 leading-relaxed list-disc pl-5">
+            <li>{t('planner_tip1')}</li>
+            <li>{t('planner_tip2')}</li>
+            <li>{t('planner_tip3')}</li>
+            <li>{t('planner_tip4')}</li>
+          </ul>
         </div>
       </div>
     </div>

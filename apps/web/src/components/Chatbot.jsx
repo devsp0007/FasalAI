@@ -154,46 +154,75 @@ export default function Chatbot() {
       {/* FAB Button */}
       {!isOpen && (
         <button
-          className="chatbot-fab animate-fade-in"
+          className="fixed bottom-20 md:bottom-8 right-5 z-[100] w-14 h-14 bg-primary hover:bg-primary-container text-white rounded-full shadow-xl shadow-primary/30 flex items-center justify-center transition-all hover:scale-105 animate-fade-in group"
           onClick={() => setIsOpen(true)}
           title={t('chat_title')}
           aria-label="Open chat"
         >
-          💬
+          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+          {/* Notification dot */}
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-error rounded-full border-2 border-surface flex items-center justify-center">
+            <span className="font-label text-[8px] text-white font-bold">1</span>
+          </span>
+          {/* Label tooltip */}
+          <div className="absolute right-full mr-3 bg-inverse-surface text-inverse-on-surface px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Fasal Assistant
+          </div>
         </button>
       )}
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="chatbot-panel animate-fade-in-up">
+        <div className="fixed bottom-20 md:bottom-8 right-5 z-[100] w-[360px] max-w-[calc(100vw-2.5rem)] bg-white rounded-3xl shadow-2xl editorial-shadow-lg overflow-hidden animate-fade-in-scale flex flex-col" style={{ maxHeight: 'min(580px, calc(100vh - 120px))' }}>
           {/* Header */}
-          <div className="chatbot-header">
-            <div className="chatbot-header-info">
-              <div className="chatbot-avatar">🤖</div>
+          <div className="bg-primary p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+              </div>
               <div>
-                <div className="chatbot-header-title">{t('chat_title')}</div>
-                <div className="chatbot-header-subtitle">Gemini AI</div>
+                <h3 className="font-headline font-bold text-white text-sm">{t('chat_title')}</h3>
+                <p className="font-label text-[10px] text-white/70 uppercase tracking-wider">Gemini AI • Online</p>
               </div>
             </div>
-            <button className="chatbot-close" onClick={() => setIsOpen(false)}>✕</button>
+            <button
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <span className="material-symbols-outlined text-white text-lg">close</span>
+            </button>
           </div>
 
           {/* Messages */}
-          <div className="chatbot-messages">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 hide-scrollbar bg-surface-container-low" style={{ minHeight: '200px' }}>
             {messages.map((msg, i) => (
-              <div key={i} className={`chatbot-msg ${msg.role}`}>
-                {msg.role === 'assistant' && <span className="chatbot-msg-avatar">🤖</span>}
-                <div className={`chatbot-msg-bubble ${msg.role}`}>
+              <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} animate-fade-in`}>
+                {msg.role === 'assistant' && (
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                    <span className="material-symbols-outlined text-primary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+                  </div>
+                )}
+                <div className={`
+                  max-w-[78%] px-4 py-2.5 text-[13px] leading-relaxed
+                  ${msg.role === 'user'
+                    ? 'bg-primary text-white rounded-2xl rounded-tr-md'
+                    : 'bg-white text-on-surface rounded-2xl rounded-tl-md editorial-shadow'
+                  }
+                `}>
                   {msg.text}
                 </div>
               </div>
             ))}
             {isLoading && (
-              <div className="chatbot-msg assistant">
-                <span className="chatbot-msg-avatar">🤖</span>
-                <div className="chatbot-msg-bubble assistant">
-                  <div className="chatbot-typing">
-                    <span></span><span></span><span></span>
+              <div className="flex gap-2.5 animate-fade-in">
+                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                  <span className="material-symbols-outlined text-primary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+                </div>
+                <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-md editorial-shadow">
+                  <div className="flex gap-1.5">
+                    <span className="w-2 h-2 bg-primary/30 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-primary/30 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-primary/30 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
@@ -202,31 +231,44 @@ export default function Chatbot() {
           </div>
 
           {/* Input */}
-          <div className="chatbot-input-area">
-            <button
-              className={`chatbot-mic-btn ${isListening ? 'listening' : ''} ${isProcessing ? 'processing' : ''}`}
-              onClick={toggleListening}
-              title={isProcessing ? 'Processing...' : isListening ? t('chat_listening') : 'Voice input'}
-              disabled={isProcessing}
-            >
-              {isProcessing ? '...' : isListening ? '⏹️' : '🎤'}
-            </button>
-            <input
-              ref={inputRef}
-              className="chatbot-input"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t('chat_placeholder')}
-              disabled={isLoading}
-            />
-            <button
-              className="chatbot-send-btn"
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading}
-            >
-              ➤
-            </button>
+          <div className="p-3 bg-white border-t border-surface-container-high/50">
+            <div className="flex items-center gap-2 bg-surface-container-low rounded-2xl px-3 py-1.5">
+              <button
+                className={`
+                  w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0
+                  ${isListening ? 'bg-error text-white animate-pulse-soft' : isProcessing ? 'bg-tertiary text-white' : 'hover:bg-surface-container text-on-surface-variant/50'}
+                `}
+                onClick={toggleListening}
+                title={isProcessing ? 'Processing...' : isListening ? t('chat_listening') : 'Voice input'}
+                disabled={isProcessing}
+              >
+                <span className="material-symbols-outlined text-lg">
+                  {isProcessing ? 'hourglass_empty' : isListening ? 'stop' : 'mic'}
+                </span>
+              </button>
+              <input
+                ref={inputRef}
+                className="flex-1 bg-transparent border-none text-sm text-on-surface placeholder:text-on-surface-variant/40 py-2 focus:ring-0 focus:outline-none font-body"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t('chat_placeholder')}
+                disabled={isLoading}
+              />
+              <button
+                className={`
+                  w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0
+                  ${input.trim() && !isLoading
+                    ? 'bg-primary text-white hover:bg-primary-container'
+                    : 'text-on-surface-variant/30 cursor-not-allowed'
+                  }
+                `}
+                onClick={handleSend}
+                disabled={!input.trim() || isLoading}
+              >
+                <span className="material-symbols-outlined text-lg">send</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { getFields, createField, deleteFieldById } from '../services/api'
 
@@ -17,24 +17,22 @@ const CROP_LIST = [
 ]
 
 const SOIL_STATUS = (ph) => {
-  if (ph >= 6.0 && ph <= 7.5) return { label: 'Good', color: 'badge-green' }
-  if (ph >= 5.5 && ph <= 8.0) return { label: 'Moderate', color: 'badge-amber' }
-  return { label: 'Poor', color: 'badge-red' }
+  if (ph >= 6.0 && ph <= 7.5) return { label: 'Optimal', color: 'bg-primary/10 text-primary' }
+  if (ph >= 5.5 && ph <= 8.0) return { label: 'Moderate', color: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' }
+  return { label: 'Poor', color: 'bg-error/10 text-error' }
 }
 
+const FIELD_IMAGES = [
+  'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&q=80',
+  'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=400&q=80',
+  'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&q=80',
+  'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=400&q=80',
+]
+
 const EMPTY_FORM = {
-  label: '',
-  area_ha: 1.0,
-  irrigation: 'Rainfed',
-  soil_health: 'Good',
-  soil_n: 90,
-  soil_p: 42,
-  soil_k: 43,
-  soil_ph: 6.5,
-  soil_type: '',
-  previous_crop: '',
-  current_crop: '',
-  status: 'active',
+  label: '', area_ha: 1.0, irrigation: 'Rainfed', soil_health: 'Good',
+  soil_n: 90, soil_p: 42, soil_k: 43, soil_ph: 6.5, soil_type: '',
+  previous_crop: '', current_crop: '', status: 'active',
 }
 
 export default function Fields() {
@@ -48,149 +46,129 @@ export default function Fields() {
   const [error, setError] = useState(null)
   const { t } = useLanguage()
 
-  // Fetch fields from API
   const loadFields = async () => {
     setFieldsLoading(true)
-    try {
-      const data = await getFields()
-      setFields(data.fields || [])
-    } catch (err) {
-      console.error('Failed to load fields:', err)
-      setFields([])
-    } finally {
-      setFieldsLoading(false)
-    }
+    try { const data = await getFields(); setFields(data.fields || []) }
+    catch (err) { console.error('Failed to load fields:', err); setFields([]) }
+    finally { setFieldsLoading(false) }
   }
-
   useEffect(() => { loadFields() }, [])
 
-  // Handle soil health preset selection
-  const handleSoilPreset = (preset) => {
-    setAddForm(f => ({
-      ...f,
-      soil_health: preset.label,
-      soil_n: preset.n,
-      soil_p: preset.p,
-      soil_k: preset.k,
-      soil_ph: preset.ph,
-    }))
-  }
+  const handleSoilPreset = (preset) => setAddForm(f => ({ ...f, soil_health: preset.label, soil_n: preset.n, soil_p: preset.p, soil_k: preset.k, soil_ph: preset.ph }))
 
-  // Handle add field
   const handleAddField = async (e) => {
     e.preventDefault()
-    if (!addForm.label.trim()) {
-      setError('Please enter a field name')
-      return
-    }
-    setSaving(true)
-    setError(null)
+    if (!addForm.label.trim()) { setError('Please enter a field name'); return }
+    setSaving(true); setError(null)
     try {
-      await createField({
-        label: addForm.label.trim(),
-        area_ha: addForm.area_ha,
-        irrigation: addForm.irrigation.toLowerCase(),
-        soil_n: addForm.soil_n,
-        soil_p: addForm.soil_p,
-        soil_k: addForm.soil_k,
-        soil_ph: addForm.soil_ph,
-        soil_type: addForm.soil_type,
-        previous_crop: addForm.previous_crop,
-        current_crop: addForm.current_crop,
-        status: addForm.status,
-      })
-      setShowAddModal(false)
-      setAddForm({ ...EMPTY_FORM })
-      await loadFields()
-    } catch (err) {
-      setError(err.message || 'Failed to create field')
-    } finally {
-      setSaving(false)
-    }
+      await createField({ label: addForm.label.trim(), area_ha: addForm.area_ha, irrigation: addForm.irrigation.toLowerCase(), soil_n: addForm.soil_n, soil_p: addForm.soil_p, soil_k: addForm.soil_k, soil_ph: addForm.soil_ph, soil_type: addForm.soil_type, previous_crop: addForm.previous_crop, current_crop: addForm.current_crop, status: addForm.status })
+      setShowAddModal(false); setAddForm({ ...EMPTY_FORM }); await loadFields()
+    } catch (err) { setError(err.message || 'Failed to create field') }
+    finally { setSaving(false) }
   }
 
-  // Handle delete field
   const handleDeleteField = async (fieldId) => {
     if (!confirm('Are you sure you want to delete this field?')) return
     setDeleting(fieldId)
-    try {
-      await deleteFieldById(fieldId)
-      if (selected?.id === fieldId) setSelected(null)
-      await loadFields()
-    } catch (err) {
-      console.error('Failed to delete field:', err)
-    } finally {
-      setDeleting(null)
-    }
+    try { await deleteFieldById(fieldId); if (selected?.id === fieldId) setSelected(null); await loadFields() }
+    catch (err) { console.error('Failed to delete field:', err) }
+    finally { setDeleting(null) }
   }
 
   const totalArea = fields.reduce((s, p) => s + (p.area_ha || 0), 0)
 
+  const inputClass = "w-full bg-surface-container-highest rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none"
+
   return (
-    <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-6)' }}>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2>{t('fields_title')}</h2>
-          <p className="text-sm text-muted">{fields.length} plots registered · {totalArea.toFixed(1)} hectares total</p>
+          <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">My Fields 📍</h1>
+          <p className="font-label text-sm text-on-surface-variant/60 mt-1">{fields.length} plots registered · {totalArea.toFixed(1)} hectares total</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setShowAddModal(true); setError(null); setAddForm({ ...EMPTY_FORM }) }}>
-          + {t('fields_addField')}
+        <button onClick={() => { setShowAddModal(true); setError(null); setAddForm({ ...EMPTY_FORM }) }}
+          className="px-6 py-3 bg-primary text-white font-bold rounded-full shadow-lg shadow-primary/20 flex items-center gap-2 hover:bg-primary-container transition-all text-sm">
+          <span className="material-symbols-outlined text-lg">add_circle</span> {t('fields_addField')}
         </button>
       </div>
 
+      {/* Stats Banner */}
+      {fields.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Total Fields', value: fields.length, icon: 'map', color: 'bg-primary/10 text-primary' },
+            { label: 'Total Area', value: `${totalArea.toFixed(1)} ha`, icon: 'crop_landscape', color: 'bg-tertiary-fixed/30 text-tertiary' },
+            { label: 'Active', value: fields.filter(f => f.status === 'active').length, icon: 'check_circle', color: 'bg-secondary-container/30 text-secondary' },
+          ].map((s, i) => (
+            <div key={i} className="bg-white rounded-2xl editorial-shadow p-4 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl ${s.color} flex items-center justify-center`}>
+                <span className="material-symbols-outlined text-lg">{s.icon}</span>
+              </div>
+              <div>
+                <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase">{s.label}</div>
+                <div className="font-headline font-extrabold text-lg text-on-surface">{s.value}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Field Cards */}
       {fieldsLoading ? (
-        <div className="loading-container"><div className="spinner"></div><span>Loading fields...</span></div>
+        <div className="flex flex-col items-center justify-center py-16 gap-4"><div className="spinner" /><span className="font-label text-sm text-on-surface-variant">Loading fields...</span></div>
       ) : fields.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">🌾</div>
-          <h3>No Fields Added Yet</h3>
-          <p className="text-secondary">Click "Add Field" to register your first farm plot</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
+            <span className="material-symbols-outlined text-primary text-4xl">map</span>
+          </div>
+          <h3 className="font-headline font-bold text-lg text-on-surface mb-2">No Fields Added Yet</h3>
+          <p className="text-sm text-on-surface-variant/60">Click "Add Field" to register your first farm plot</p>
         </div>
       ) : (
-        <div className="grid-3">
-          {fields.map((plot) => (
-            <div key={plot.id} className="card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => setSelected(selected?.id === plot.id ? null : plot)}>
-              <div className="card-body">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--sp-3)' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {fields.map((plot, idx) => (
+            <div key={plot.id}
+              onClick={() => setSelected(selected?.id === plot.id ? null : plot)}
+              className={`bg-white rounded-2xl editorial-shadow cursor-pointer transition-all hover:-translate-y-1 duration-200 overflow-hidden group ${
+                selected?.id === plot.id ? 'ring-2 ring-primary/30' : ''
+              }`}>
+              {/* Field Hero Image */}
+              <div className="h-28 relative overflow-hidden">
+                <img src={FIELD_IMAGES[idx % FIELD_IMAGES.length]} alt={plot.label}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
                   <div>
-                    <h3>{plot.label}</h3>
-                    <span className={`badge ${plot.status === 'active' ? 'badge-green' : 'badge-gray'}`}>{plot.status}</span>
+                    <h3 className="font-headline font-bold text-white text-sm">{plot.label}</h3>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mt-1 ${plot.status === 'active' ? 'bg-primary text-white' : 'bg-white/30 text-white'}`}>{plot.status}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
-                    <div style={{ fontSize: '1.5rem' }}>🗺️</div>
-                    <button
-                      className="btn btn-sm btn-ghost"
-                      style={{ color: 'var(--danger)', padding: '4px 8px', fontSize: '0.75rem' }}
-                      onClick={(e) => { e.stopPropagation(); handleDeleteField(plot.id) }}
-                      disabled={deleting === plot.id}
-                    >
-                      {deleting === plot.id ? '...' : '🗑️'}
-                    </button>
-                  </div>
+                  <button onClick={e => { e.stopPropagation(); handleDeleteField(plot.id) }} disabled={deleting === plot.id}
+                    className="p-1.5 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-error/80 transition-colors">
+                    <span className="material-symbols-outlined text-sm">{deleting === plot.id ? 'hourglass_empty' : 'delete'}</span>
+                  </button>
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-3)', marginTop: 'var(--sp-4)' }}>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: t('fields_area'), value: `${plot.area_ha} ha` },
+                    { label: t('fields_irrigation'), value: plot.irrigation, cap: true },
+                    { label: t('fields_previousCrop'), value: plot.previous_crop || '—', cap: true },
+                    { label: 'Current Crop', value: plot.current_crop || '—', cap: true },
+                  ].map((item, i) => (
+                    <div key={i}>
+                      <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase">{item.label}</div>
+                      <div className={`font-headline font-bold text-sm text-on-surface ${item.cap ? 'capitalize' : ''}`}>{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center justify-between">
                   <div>
-                    <div className="text-xs text-muted">{t('fields_area')}</div>
-                    <div className="font-semibold">{plot.area_ha} ha</div>
+                    <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase">{t('fields_soilHealth')}</div>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mt-0.5 ${SOIL_STATUS(plot.soil_ph || 7).color}`}>{SOIL_STATUS(plot.soil_ph || 7).label}</span>
                   </div>
-                  <div>
-                    <div className="text-xs text-muted">{t('fields_irrigation')}</div>
-                    <div className="font-semibold" style={{ textTransform: 'capitalize' }}>{plot.irrigation}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted">{t('fields_previousCrop')}</div>
-                    <div className="font-semibold" style={{ textTransform: 'capitalize' }}>{plot.previous_crop || '—'}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted">Current Crop</div>
-                    <div className="font-semibold" style={{ textTransform: 'capitalize' }}>{plot.current_crop || '—'}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted">{t('fields_soilHealth')}</div>
-                    <span className={`badge ${SOIL_STATUS(plot.soil_ph || 7).color}`}>{SOIL_STATUS(plot.soil_ph || 7).label}</span>
-                  </div>
+                  <span className="font-label text-xs text-on-surface-variant/40">pH {plot.soil_ph || '—'}</span>
                 </div>
               </div>
             </div>
@@ -198,186 +176,155 @@ export default function Fields() {
         </div>
       )}
 
-      {/* Plot Detail Panel */}
+      {/* Detail Panel */}
       {selected && (
-        <div className="card animate-fade-in-up" style={{ marginTop: 'var(--sp-6)' }}>
-          <div className="card-header">
-            <h3>📋 {selected.label} — Details</h3>
-            <button className="btn btn-sm btn-ghost" onClick={() => setSelected(null)}>✕ Close</button>
+        <div className="bg-white rounded-2xl editorial-shadow overflow-hidden animate-fade-in-up">
+          <div className="p-5 bg-surface-container-low flex items-center justify-between">
+            <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">assignment</span> {selected.label} — Details
+            </h3>
+            <button onClick={() => setSelected(null)} className="p-2 rounded-full hover:bg-surface-container transition-colors">
+              <span className="material-symbols-outlined text-on-surface-variant">close</span>
+            </button>
           </div>
-          <div className="card-body">
-            <div className="grid-2" style={{ gap: 'var(--sp-6)' }}>
-              {/* Soil Health */}
-              <div>
-                <h4 style={{ marginBottom: 'var(--sp-4)' }}>🧪 Soil Nutrients (kg/ha)</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-                  {[
-                    { label: 'Nitrogen (N)', value: selected.soil_n || 0, max: 200, color: '#43A047' },
-                    { label: 'Phosphorus (P)', value: selected.soil_p || 0, max: 100, color: '#FF9800' },
-                    { label: 'Potassium (K)', value: selected.soil_k || 0, max: 100, color: '#1E88E5' },
-                  ].map(nutrient => (
-                    <div key={nutrient.label}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span className="text-sm">{nutrient.label}</span>
-                        <span className="font-semibold text-sm">{nutrient.value}</span>
-                      </div>
-                      <div className="score-bar-container">
-                        <div className="score-bar" style={{ width: `${(nutrient.value / nutrient.max) * 100}%`, background: nutrient.color }}></div>
-                      </div>
-                    </div>
-                  ))}
-                  <div style={{ marginTop: 'var(--sp-2)' }}>
-                    <span className="text-sm">Soil pH: </span>
-                    <span className="font-bold">{selected.soil_ph || '—'}</span>
-                    <span className={`badge ${SOIL_STATUS(selected.soil_ph || 7).color}`} style={{ marginLeft: 8 }}>{SOIL_STATUS(selected.soil_ph || 7).label}</span>
+          <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Soil */}
+            <div className="space-y-4">
+              <h4 className="font-headline font-bold flex items-center gap-2 text-on-surface">
+                <span className="material-symbols-outlined text-primary text-sm">science</span> Soil Nutrients (kg/ha)
+              </h4>
+              {[
+                { label: 'Nitrogen (N)', value: selected.soil_n || 0, max: 200, color: '#006b47' },
+                { label: 'Phosphorus (P)', value: selected.soil_p || 0, max: 100, color: '#a36a00' },
+                { label: 'Potassium (K)', value: selected.soil_k || 0, max: 100, color: '#3c6842' },
+              ].map(nutrient => (
+                <div key={nutrient.label}>
+                  <div className="flex justify-between mb-1">
+                    <span className="font-label text-sm text-on-surface">{nutrient.label}</span>
+                    <span className="font-headline font-bold text-sm">{nutrient.value}</span>
+                  </div>
+                  <div className="h-2.5 bg-surface-container-low rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(nutrient.value / nutrient.max) * 100}%`, background: nutrient.color }} />
                   </div>
                 </div>
+              ))}
+              <div className="flex items-center gap-2 pt-2">
+                <span className="font-label text-sm text-on-surface">Soil pH:</span>
+                <span className="font-headline font-bold">{selected.soil_ph || '—'}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${SOIL_STATUS(selected.soil_ph || 7).color}`}>{SOIL_STATUS(selected.soil_ph || 7).label}</span>
               </div>
-
-              {/* Plot Info */}
-              <div>
-                <h4 style={{ marginBottom: 'var(--sp-4)' }}>📍 Plot Information</h4>
-                <table style={{ width: '100%', fontSize: '0.85rem' }}>
-                  <tbody>
-                    {[
-                      ['Label', selected.label],
-                      ['Area', `${selected.area_ha} hectares`],
-                      ['Irrigation', selected.irrigation],
-                      ['Previous Crop', selected.previous_crop || '—'],
-                      ['Current Crop', selected.current_crop || '—'],
-                      ['Soil Type', selected.soil_type || '—'],
-                      ['Status', selected.status],
-                    ].map(([k, v]) => (
-                      <tr key={k} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                        <td style={{ padding: '8px 0', color: 'var(--text-muted)', width: 140 }}>{k}</td>
-                        <td style={{ padding: '8px 0', fontWeight: 500, textTransform: 'capitalize' }}>{v}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            </div>
+            {/* Info Table */}
+            <div>
+              <h4 className="font-headline font-bold flex items-center gap-2 text-on-surface mb-4">
+                <span className="material-symbols-outlined text-primary text-sm">info</span> Plot Information
+              </h4>
+              <div className="space-y-0">
+                {[
+                  ['Label', selected.label], ['Area', `${selected.area_ha} hectares`],
+                  ['Irrigation', selected.irrigation], ['Previous Crop', selected.previous_crop || '—'],
+                  ['Current Crop', selected.current_crop || '—'], ['Soil Type', selected.soil_type || '—'], ['Status', selected.status],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex justify-between py-3 border-b border-surface-container-high/50 last:border-0">
+                    <span className="font-label text-sm text-on-surface-variant/60">{k}</span>
+                    <span className="font-headline font-bold text-sm text-on-surface capitalize">{v}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Add Field Modal */}
+      {/* Add Modal */}
       {showAddModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', zIndex: 1000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 'var(--sp-4)',
-          backdropFilter: 'blur(4px)',
-        }} onClick={() => setShowAddModal(false)}>
-          <div className="card animate-fade-in-up" style={{
-            width: '100%', maxWidth: 600, maxHeight: '90vh', overflowY: 'auto',
-          }} onClick={e => e.stopPropagation()}>
-            <div className="card-header" style={{ background: 'linear-gradient(135deg, var(--green-500), var(--green-700))', color: 'white' }}>
-              <h3 style={{ color: 'white' }}>🌾 Add New Field</h3>
-              <button className="btn btn-sm btn-ghost" style={{ color: 'white' }} onClick={() => setShowAddModal(false)}>✕</button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
+          <div className="bg-white rounded-3xl editorial-shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto hide-scrollbar animate-fade-in-scale" onClick={e => e.stopPropagation()}>
+            <div className="p-6 bg-gradient-to-r from-primary to-primary-container text-white flex items-center justify-between rounded-t-3xl">
+              <h3 className="font-headline font-bold flex items-center gap-2">
+                <span className="material-symbols-outlined">agriculture</span> Add New Field
+              </h3>
+              <button onClick={() => setShowAddModal(false)} className="p-1 rounded-full hover:bg-white/20 transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
             </div>
-            <div className="card-body">
+            <div className="p-6">
               {error && (
-                <div style={{ padding: 'var(--sp-3)', background: '#FFEBEE', borderRadius: 'var(--radius-md)', color: 'var(--danger)', marginBottom: 'var(--sp-4)', fontSize: '0.85rem' }}>
-                  ❌ {error}
+                <div className="bg-error-container/30 text-on-error-container p-3 rounded-2xl text-sm mb-4 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm text-error">error</span> {error}
                 </div>
               )}
-              <form onSubmit={handleAddField}>
-                {/* Field Name */}
-                <div className="form-group" style={{ marginBottom: 'var(--sp-4)' }}>
-                  <label className="form-label">Field Name *</label>
-                  <input className="form-input" placeholder="e.g. South Field, Plot A"
+              <form onSubmit={handleAddField} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Field Name *</label>
+                  <input className={inputClass} placeholder="e.g. South Field, Plot A"
                     value={addForm.label} onChange={e => setAddForm(f => ({...f, label: e.target.value}))} required />
                 </div>
-
-                {/* Area & Status */}
-                <div className="form-row" style={{ marginBottom: 'var(--sp-4)' }}>
-                  <div className="form-group">
-                    <label className="form-label">Area (hectares) *</label>
-                    <input className="form-input" type="number" step="0.1" min="0.01"
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Area (hectares) *</label>
+                    <input className={inputClass} type="number" step="0.1" min="0.01"
                       value={addForm.area_ha} onChange={e => setAddForm(f => ({...f, area_ha: +e.target.value}))} required />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Status</label>
-                    <select className="form-select" value={addForm.status} onChange={e => setAddForm(f => ({...f, status: e.target.value}))}>
+                  <div className="space-y-1.5">
+                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Status</label>
+                    <select className={inputClass} value={addForm.status} onChange={e => setAddForm(f => ({...f, status: e.target.value}))}>
                       <option value="active">Active</option>
                       <option value="fallow">Fallow</option>
                     </select>
                   </div>
                 </div>
-
-                {/* Irrigation */}
-                <div className="form-group" style={{ marginBottom: 'var(--sp-4)' }}>
-                  <label className="form-label">Irrigation Type</label>
-                  <select className="form-select" value={addForm.irrigation} onChange={e => setAddForm(f => ({...f, irrigation: e.target.value}))}>
+                <div className="space-y-1.5">
+                  <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Irrigation Type</label>
+                  <select className={inputClass} value={addForm.irrigation} onChange={e => setAddForm(f => ({...f, irrigation: e.target.value}))}>
                     {IRRIGATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
-
-                {/* Soil Health */}
-                <div style={{ marginBottom: 'var(--sp-4)' }}>
-                  <label className="form-label" style={{ marginBottom: 'var(--sp-2)' }}>Soil Health</label>
-                  <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap', marginBottom: 'var(--sp-3)' }}>
+                {/* Soil health presets */}
+                <div className="space-y-2">
+                  <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Soil Health</label>
+                  <div className="flex flex-wrap gap-2">
                     {SOIL_HEALTH_OPTIONS.map(opt => (
-                      <button key={opt.label} type="button"
-                        className={`btn btn-sm ${addForm.soil_health === opt.label ? 'btn-primary' : 'btn-ghost'}`}
-                        style={{ borderRadius: 'var(--radius-full)', fontSize: '0.8rem' }}
-                        onClick={() => handleSoilPreset(opt)}>
-                        {opt.label}
-                      </button>
+                      <button key={opt.label} type="button" onClick={() => handleSoilPreset(opt)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                          addForm.soil_health === opt.label ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                        }`}>{opt.label}</button>
                     ))}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 'var(--sp-2)' }}>
-                    <div>
-                      <label className="text-xs text-muted">N (kg/ha)</label>
-                      <input className="form-input" type="number" value={addForm.soil_n}
-                        onChange={e => setAddForm(f => ({...f, soil_n: +e.target.value, soil_health: 'Custom'}))} style={{ fontSize: '0.85rem' }} />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted">P (kg/ha)</label>
-                      <input className="form-input" type="number" value={addForm.soil_p}
-                        onChange={e => setAddForm(f => ({...f, soil_p: +e.target.value, soil_health: 'Custom'}))} style={{ fontSize: '0.85rem' }} />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted">K (kg/ha)</label>
-                      <input className="form-input" type="number" value={addForm.soil_k}
-                        onChange={e => setAddForm(f => ({...f, soil_k: +e.target.value, soil_health: 'Custom'}))} style={{ fontSize: '0.85rem' }} />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted">pH</label>
-                      <input className="form-input" type="number" step="0.1" min="0" max="14" value={addForm.soil_ph}
-                        onChange={e => setAddForm(f => ({...f, soil_ph: +e.target.value, soil_health: 'Custom'}))} style={{ fontSize: '0.85rem' }} />
-                    </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { key: 'soil_n', label: 'N' }, { key: 'soil_p', label: 'P' },
+                      { key: 'soil_k', label: 'K' }, { key: 'soil_ph', label: 'pH' },
+                    ].map(f => (
+                      <div key={f.key} className="space-y-1">
+                        <label className="font-label text-[10px] text-on-surface-variant/50">{f.label}</label>
+                        <input className={inputClass} type="number" value={addForm[f.key]}
+                          onChange={e => setAddForm(fm => ({...fm, [f.key]: +e.target.value, soil_health: 'Custom'}))}
+                          step={f.key === 'soil_ph' ? '0.1' : '1'} />
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Previous & Current Crop */}
-                <div className="form-row" style={{ marginBottom: 'var(--sp-4)' }}>
-                  <div className="form-group">
-                    <label className="form-label">Previous Crop</label>
-                    <select className="form-select" value={addForm.previous_crop} onChange={e => setAddForm(f => ({...f, previous_crop: e.target.value}))}>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Previous Crop</label>
+                    <select className={inputClass} value={addForm.previous_crop} onChange={e => setAddForm(f => ({...f, previous_crop: e.target.value}))}>
                       <option value="">— None —</option>
                       {CROP_LIST.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Current Crop</label>
-                    <select className="form-select" value={addForm.current_crop} onChange={e => setAddForm(f => ({...f, current_crop: e.target.value}))}>
+                  <div className="space-y-1.5">
+                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Current Crop</label>
+                    <select className={inputClass} value={addForm.current_crop} onChange={e => setAddForm(f => ({...f, current_crop: e.target.value}))}>
                       <option value="">— None —</option>
                       {CROP_LIST.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                 </div>
-
-                {/* Submit */}
-                <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={saving}>
-                  {saving ? (
-                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                      <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }}></div>
-                      Saving...
-                    </span>
-                  ) : '🌾 Add Field'}
+                <button type="submit" disabled={saving}
+                  className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:bg-primary-container transition-all disabled:opacity-60">
+                  {saving ? <><div className="spinner-sm !border-white/30 !border-t-white" /> Saving...</>
+                    : <><span className="material-symbols-outlined">agriculture</span> Add Field</>}
                 </button>
               </form>
             </div>
