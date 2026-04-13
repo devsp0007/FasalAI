@@ -35,8 +35,22 @@ export default function Dashboard() {
   const currentHumidity = weather?.current?.humidity
   const currentCondition = weather?.current?.description || 'Clear sky'
 
+  const getConditionEmoji = (condition) => {
+    if (!condition) return '☀️'
+    const lower = condition.toLowerCase()
+    if (lower.includes('clear') || lower.includes('sun')) return '☀️'
+    if (lower.includes('partly cloud') || lower.includes('few cloud')) return '⛅'
+    if (lower.includes('cloud')) return '☁️'
+    if (lower.includes('rain') || lower.includes('drizzle')) return '🌧️'
+    if (lower.includes('storm') || lower.includes('thunder')) return '⛈️'
+    if (lower.includes('snow')) return '❄️'
+    if (lower.includes('mist') || lower.includes('fog') || lower.includes('haze')) return '🌫️'
+    return '⛅'
+  }
+  const weatherEmoji = getConditionEmoji(currentCondition)
+
   return (
-    <div className="space-y-6 md:space-y-8 animate-fade-in stagger-children">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-fade-in stagger-children relative z-10 h-full">
       {/* Weather Alert Banner */}
       {weatherAlerts.length > 0 && (
         <div className="bg-gradient-to-r from-tertiary-container to-tertiary text-white p-4 md:p-5 rounded-3xl flex items-center gap-3 shadow-lg animate-fade-in-up">
@@ -48,272 +62,199 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ─── Hero Welcome Section ────────────────────────── */}
-      <div className="relative rounded-3xl overflow-hidden min-h-[260px]">
-        <img
-          src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=1600&q=80"
-          alt="Lush green agricultural field"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#003b21]/85 via-[#003b21]/60 to-transparent" />
-        <div className="relative z-10 p-6 md:p-10 flex flex-col md:flex-row justify-between items-start h-full min-h-[260px]">
-          <div className="space-y-4 flex-1">
-            <p className="font-label text-[11px] text-white/50 uppercase tracking-widest">
-              {new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </p>
-            <h1 className="font-headline font-extrabold text-3xl md:text-4xl text-white tracking-tight leading-tight">
-              Welcome back,<br />{userName}.
-            </h1>
-            <p className="text-white/60 text-sm max-w-md">
-              Your fields are <span className="text-primary-fixed font-bold">thriving</span>. 
-              {currentTemp && ` Current conditions: ${Math.round(currentTemp)}°C, ${currentCondition}.`}
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Link to="/fields" className="bg-white text-primary px-5 py-2.5 rounded-full font-bold text-sm hover:scale-[0.97] transition-transform shadow-lg flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg">add_circle</span>
-                Add New Field
-              </Link>
-              <Link to="/recommend" className="bg-white/15 backdrop-blur-sm text-white px-5 py-2.5 rounded-full font-bold text-sm border border-white/20 hover:bg-white/25 transition-all flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg">psychology</span>
-                Get Advisory
-              </Link>
-            </div>
-          </div>
-
-          {/* Weather widget (right side on desktop) */}
-          {weather && (
-            <div className="hidden md:flex flex-col items-end gap-2 mt-2">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 min-w-[160px]">
-                <div className="font-headline font-extrabold text-5xl text-white leading-none">
-                  {currentTemp ? `${Math.round(currentTemp)}°` : '—'}
-                </div>
-                <p className="font-label text-xs text-white/60 mt-1 capitalize">{currentCondition}</p>
-                <div className="flex items-center gap-4 mt-3">
-                  <div className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-white/50 text-sm">water_drop</span>
-                    <span className="font-label text-xs text-white/70 font-bold">{currentHumidity || '—'}%</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-white/50 text-sm">air</span>
-                    <span className="font-label text-xs text-white/70 font-bold">{weather?.current?.wind_speed || '—'} km/h</span>
-                  </div>
-                </div>
-              </div>
-              <div className="font-label text-[10px] text-white/40 uppercase tracking-wider">
-                {city || locState || 'Your Area'} • Live
-              </div>
-            </div>
-          )}
+      {/* Hero Welcome Banner */}
+      <section className="relative overflow-hidden rounded-xl bg-emerald-950 text-white min-h-[320px] flex flex-col justify-center p-8 md:p-12">
+        <div className="absolute inset-0 opacity-40">
+          <img alt="Wheat field" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBleOwQ7wYolit5VfeaJRT0A1QtSzF5TVmD_Ne3ff8RHInMh1vetLXEOodeagM_x--0ZSKjqgdK1jDX28f91BMlQsRU_kX-yKvwIK9uHqp7sU-YwJBzKuQyKfZfUpvEIZVOc-Km5X4NmbM-sBJTc8y7ngHoePhe3n4xOducMFsbMpYnpiY3AK9Oupr-AQ2J1dADLRU_Y8rID6265xh_augMZzEB6Iod34zd6_AES-4tQDTt4z_58hSYVNEW35vHJNGd0kKTYkC02COl"/>
         </div>
-      </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-950 via-emerald-950/60 to-transparent"></div>
+        <div className="relative z-10 max-w-xl">
+          <span className="font-inter text-xs tracking-widest uppercase text-emerald-400 mb-4 block font-bold">🌾 Current Cycle: Wheat v.24</span>
+          <h2 className="font-headline text-4xl md:text-5xl font-extrabold mb-4 leading-tight">Welcome back, {userName}. <br/>Your fields are <span className="text-emerald-400">thriving</span>.</h2>
+          <p className="font-body text-emerald-100/80 mb-8 max-w-sm">Optimal harvest window predicted in 14 days. Soil moisture levels are steady at {weather?.current?.humidity || 68}%.</p>
+          <div className="flex gap-4">
+            <Link to="/yield" className="bg-primary px-8 py-3 rounded-full font-bold text-white shadow-lg hover:scale-105 transition-transform text-center">View Report</Link>
+            <Link to="/fields" className="bg-white/10 backdrop-blur-md border border-white/20 px-8 py-3 rounded-full font-bold text-white hover:bg-white/20 transition-all text-center">Sensor Data</Link>
+          </div>
+        </div>
+      </section>
 
-      {/* ─── Mobile Weather Strip ────────────────────────── */}
-      {weather && (
-        <div className="md:hidden bg-white rounded-2xl editorial-shadow p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <span className="text-2xl">{weather.forecast?.[0]?.icon || '☀️'}</span>
-            </div>
+      {/* Quick Stats & Alerts (Bento Layout) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        {/* Weather Widget */}
+        <div className="md:col-span-4 bg-surface-container-lowest rounded-xl p-6 shadow-sm shadow-emerald-900/5 flex flex-col justify-between">
+          <div className="flex justify-between items-start mb-6">
             <div>
-              <div className="font-headline font-extrabold text-2xl text-on-surface">
-                {currentTemp ? `${Math.round(currentTemp)}°C` : '—'}
+              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold tracking-wider">Local Weather 🌧️</p>
+              <h3 className="font-headline text-2xl font-bold mt-1">{currentTemp ? `${Math.round(currentTemp)}°C` : '...'}</h3>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 text-3xl">
+              {weatherEmoji}
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-on-surface-variant font-inter">Humidity 💧</span>
+              <span className="font-bold">{currentHumidity || '0'}%</span>
+            </div>
+            <div className="w-full bg-surface-container-low h-1 rounded-full overflow-hidden">
+              <div className="bg-primary h-full transition-all duration-1000" style={{ width: `${currentHumidity || 0}%` }}></div>
+            </div>
+          </div>
+          <div className="mt-6 flex gap-2 overflow-x-auto hide-scrollbar">
+            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] rounded-full font-bold font-inter whitespace-nowrap uppercase">{weatherEmoji} {currentCondition}</span>
+            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] rounded-full font-bold font-inter whitespace-nowrap">🍃 {weather?.current?.wind_speed || 'LOW'} WIND</span>
+          </div>
+        </div>
+
+        {/* Pest Risk */}
+        <div className="md:col-span-5 bg-surface-container-lowest rounded-xl p-6 shadow-sm shadow-emerald-900/5 relative overflow-hidden">
+          <div className="relative z-10 flex flex-col h-full justify-between">
+            <div>
+              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-2">Pest Risk Index 🐛</p>
+              <div className="flex items-baseline gap-2">
+                <h3 className="font-headline text-4xl font-extrabold text-tertiary">Low</h3>
+                <span className="text-tertiary/60 text-sm font-inter">Risk detected in Sector 4</span>
               </div>
-              <p className="font-label text-xs text-on-surface-variant/60 capitalize">{currentCondition}</p>
+              <p className="text-sm text-on-surface-variant mt-4 font-inter leading-relaxed max-w-[200px]">Aphid population stable. No immediate treatment required for North-West plots. ✅</p>
+            </div>
+            <div className="mt-4">
+               <Link to="/pest" className="text-sm font-bold text-primary hover:underline">View Pest Analysis →</Link>
             </div>
           </div>
-          <div className="text-right">
-            <div className="flex items-center gap-1 justify-end">
-              <span className="material-symbols-outlined text-primary text-sm">water_drop</span>
-              <span className="font-label text-sm font-bold text-on-surface">{currentHumidity || '—'}%</span>
-            </div>
-            <p className="font-label text-[10px] text-on-surface-variant/50 mt-0.5">{city || 'Your Area'}</p>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Bento Grid: Stats ───────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
-        {[
-          {
-            icon: 'model_training', label: t('dash_mlModels'), value: '3',
-            sub: status?.status === 'healthy' ? t('dash_allOnline') : t('dash_loading'),
-            color: 'text-primary', bg: 'bg-primary/10', iconBg: 'bg-primary/10'
-          },
-          {
-            icon: 'grass', label: t('dash_cropsCovered'), value: '22',
-            sub: t('dash_rfModelReady'),
-            color: 'text-tertiary', bg: 'bg-tertiary-fixed/30', iconBg: 'bg-tertiary-fixed/40'
-          },
-          {
-            icon: 'analytics', label: t('dash_modelAccuracy'), value: '99.5%',
-            sub: t('dash_rfClassifier'),
-            color: 'text-secondary', bg: 'bg-secondary-container/30', iconBg: 'bg-secondary-container/40'
-          },
-          {
-            icon: 'trending_up', label: t('dash_latestPrice'),
-            value: `₹${prices?.latest_price?.toLocaleString() || '...'}`,
-            sub: prices ? `${prices.trend === 'up' ? '↑' : '↓'} ${prices.trend} trend` : '...',
-            color: prices?.trend === 'up' ? 'text-primary' : 'text-error',
-            bg: prices?.trend === 'up' ? 'bg-primary/5' : 'bg-error/5',
-            iconBg: prices?.trend === 'up' ? 'bg-primary/10' : 'bg-error/10'
-          },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white rounded-2xl p-4 md:p-6 editorial-shadow metric-card">
-            <div className={`w-11 h-11 rounded-2xl ${stat.iconBg} flex items-center justify-center mb-3`}>
-              <span className={`material-symbols-outlined ${stat.color}`}>{stat.icon}</span>
-            </div>
-            <p className="font-label text-[10px] md:text-xs uppercase tracking-wider text-on-surface-variant/50 mb-1 font-bold">{stat.label}</p>
-            <p className="font-headline font-extrabold text-xl md:text-2xl text-on-surface">{stat.value}</p>
-            <p className={`font-label text-xs font-semibold mt-1.5 ${stat.color}`}>{stat.sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ─── Weather Forecast + Market Cards ─────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        {/* 7-day Forecast (2 cols) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl editorial-shadow overflow-hidden">
-          <div className="p-5 md:p-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">calendar_month</span>
-              <h3 className="font-headline font-bold text-on-surface">{t('dash_weatherForecast')}</h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="smart-chip bg-surface-container text-on-surface-variant">
-                {city || locState || 'Your Area'}
-              </span>
-              {weather?.source === 'openweathermap' && (
-                <span className="smart-chip bg-primary/10 text-primary">Live</span>
-              )}
-            </div>
-          </div>
-          <div className="px-4 md:px-6 pb-5 md:pb-6">
-            {weather ? (
-              <div className="grid grid-cols-7 gap-1">
-                {weather.forecast.map((day, i) => (
-                  <div key={i} className={`text-center p-2.5 md:p-3 rounded-2xl transition-all cursor-default ${i === 0 ? 'bg-primary/5' : 'hover:bg-surface-container-low'}`}>
-                    <div className={`font-label text-[10px] md:text-xs font-bold uppercase ${i === 0 ? 'text-primary' : 'text-on-surface-variant/50'}`}>
-                      {i === 0 ? 'Today' : day.day_name.slice(0, 3)}
-                    </div>
-                    <div className="text-xl md:text-2xl my-1.5 md:my-2">{day.icon}</div>
-                    <div className="font-headline font-bold text-sm text-on-surface">{Math.round(day.temp_max)}°</div>
-                    <div className="font-label text-[10px] text-on-surface-variant/40">{Math.round(day.temp_min)}°</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 gap-3 text-on-surface-variant/60">
-                <div className="spinner" />
-                <span className="font-label text-sm">{t('dash_loadingWeather')}</span>
-              </div>
-            )}
+          <div className="absolute -right-8 -bottom-8 opacity-10 pointer-events-none">
+            <span className="material-symbols-outlined text-[160px]" style={{ fontVariationSettings: "'FILL' 1" }}>bug_report</span>
           </div>
         </div>
 
-        {/* Market Snapshot Card (1 col) */}
-        <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
-          <div className="p-5 md:p-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">trending_up</span>
-              <h3 className="font-headline font-bold text-on-surface text-sm">Market Snapshot</h3>
-            </div>
-            <Link to="/market" className="font-label text-xs text-primary font-bold hover:underline">View All →</Link>
-          </div>
-          <div className="px-5 md:px-6 pb-5 md:pb-6 space-y-3">
-            {[
-              { crop: 'Wheat', emoji: '🌾', price: prices?.latest_price, trend: prices?.trend },
-              { crop: 'Rice', emoji: '🍚', price: null, trend: null },
-              { crop: 'Maize', emoji: '🌽', price: null, trend: null },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low/50 hover:bg-surface-container-low transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{item.emoji}</span>
-                  <span className="font-headline font-bold text-sm text-on-surface">{item.crop}</span>
-                </div>
-                <div className="text-right">
-                  <div className="font-headline font-bold text-sm text-on-surface">
-                    {item.price ? `₹${item.price.toLocaleString()}` : '—'}
-                  </div>
-                  {item.trend && (
-                    <span className={`font-label text-[10px] font-bold ${item.trend === 'up' ? 'text-primary' : 'text-error'}`}>
-                      {item.trend === 'up' ? '↑' : '↓'} {item.trend}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Quick Actions ───────────────────────────────── */}
-      <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
-        <div className="p-5 md:p-6 flex items-center justify-between">
-          <h3 className="font-headline font-bold text-on-surface">{t('dash_quickActions')}</h3>
-          <span className="smart-chip bg-primary/10 text-primary">SIH 2025</span>
-        </div>
-        <div className="px-4 md:px-6 pb-5 md:pb-6">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {[
-              { to: '/recommend', icon: 'psychology', label: t('dash_getCropReco'), primary: true },
-              { to: '/yield', icon: 'query_stats', label: t('dash_predictYield') },
-              { to: '/market', icon: 'trending_up', label: t('dash_checkPrices') },
-              { to: '/planner', icon: 'agriculture', label: t('dash_planRotation') },
-              { to: '/fields', icon: 'map', label: t('dash_manageFields') },
-            ].map((action, i) => (
-              <Link
-                key={i}
-                to={action.to}
-                className={`
-                  flex flex-col items-center gap-3 p-5 rounded-2xl transition-all duration-200 group text-center
-                  ${action.primary
-                    ? 'bg-primary text-white hover:bg-primary-container shadow-md shadow-primary/15 col-span-2 md:col-span-1'
-                    : 'bg-surface-container-low text-on-surface hover:bg-surface-container metric-card'
-                  }
-                `}
-              >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${action.primary ? 'bg-white/20' : 'bg-white'}`}>
-                  <span className={`material-symbols-outlined text-xl ${action.primary ? 'text-white' : 'text-primary'}`}>{action.icon}</span>
-                </div>
-                <span className="font-headline font-bold text-xs leading-tight">{action.label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ─── AI Features Grid ────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        {[
-          {
-            icon: 'science', title: t('dash_soilAnalysis'), desc: t('dash_soilAnalysisDesc'),
-            color: 'text-primary', bg: 'bg-primary/10', link: '/recommend'
-          },
-          {
-            icon: 'query_stats', title: t('dash_yieldPrediction'), desc: t('dash_yieldPredictionDesc'),
-            color: 'text-tertiary', bg: 'bg-tertiary-fixed/30', link: '/yield'
-          },
-          {
-            icon: 'payments', title: t('dash_priceForecasting'), desc: t('dash_priceForecastingDesc'),
-            color: 'text-secondary', bg: 'bg-secondary-container/30', link: '/market'
-          },
-        ].map((feat, i) => (
-          <Link
-            key={i}
-            to={feat.link}
-            className="bg-white rounded-2xl editorial-shadow p-6 md:p-8 text-center hover:-translate-y-1 transition-all duration-300 group"
-          >
-            <div className={`w-14 h-14 mx-auto rounded-2xl ${feat.bg} flex items-center justify-center mb-4 group-hover:scale-105 transition-transform`}>
-              <span className={`material-symbols-outlined ${feat.color} text-2xl`}>{feat.icon}</span>
-            </div>
-            <h4 className="font-headline font-bold text-on-surface mb-2">{feat.title}</h4>
-            <p className="text-sm text-on-surface-variant/60 leading-relaxed">{feat.desc}</p>
-            <div className="mt-4 flex items-center justify-center gap-1 text-primary font-label text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-              Explore <span className="material-symbols-outlined text-sm">arrow_forward</span>
-            </div>
+        {/* Quick Action Buttons */}
+        <div className="md:col-span-3 flex flex-col gap-4">
+          <Link to="/fields" className="flex-1 bg-primary text-white rounded-xl p-4 flex flex-col justify-center items-center gap-2 hover:bg-primary-container transition-colors text-center group">
+            <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">add_location_alt</span>
+            <span className="font-headline font-bold text-sm">Add New Field 🗺️</span>
           </Link>
-        ))}
+          <Link to="/recommend" className="flex-1 bg-secondary-container text-on-secondary-container rounded-xl p-4 flex flex-col justify-center items-center gap-2 hover:opacity-90 transition-opacity text-center group">
+            <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">lightbulb</span>
+            <span className="font-headline font-bold text-sm">Get Advisory 💡</span>
+          </Link>
+        </div>
       </div>
+
+      {/* Market & Predictions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Market Prices */}
+        <div className="lg:col-span-2 bg-surface-container-high rounded-xl p-8 overflow-hidden">
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h3 className="font-headline text-2xl font-bold">Market Price Trends 📈</h3>
+              <p className="font-inter text-sm text-on-surface-variant">Live updates from national trade centers 🏢</p>
+            </div>
+            <Link to="/market" className="text-primary font-bold text-sm font-inter flex items-center gap-1 hover:underline">View All <span className="material-symbols-outlined text-sm">arrow_forward</span></Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Dynamic live price from API if available, else fallback */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border-2 border-primary/20">
+              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold">Wheat (Live) 🌾</p>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="font-headline text-xl font-bold">{prices?.latest_price ? `₹${prices.latest_price.toLocaleString()}` : '...'}</span>
+                {prices?.trend && (
+                   <span className={`text-${prices.trend === 'up' ? 'primary' : 'error'} text-xs font-bold flex items-center`}>
+                     {prices.trend === 'up' ? '+' : ''}{prices.trend === 'up' ? '2.4%' : '1.2%'} <span className="material-symbols-outlined text-xs ml-1">{prices.trend === 'up' ? 'trending_up' : 'trending_down'}</span>
+                   </span>
+                )}
+              </div>
+            </div>
+            
+            {/* Static placeholders consistent with design */}
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold">Organic Soy 🌱</p>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="font-headline text-xl font-bold">₹4,200</span>
+                <span className="text-emerald-600 text-xs font-bold flex items-center">+4.1% <span className="material-symbols-outlined text-xs ml-1">trending_up</span></span>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold">Maize 🌽</p>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="font-headline text-xl font-bold">₹1,960</span>
+                <span className="text-error text-xs font-bold flex items-center">-0.8% <span className="material-symbols-outlined text-xs ml-1">trending_down</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Yield Prediction */}
+        <div className="bg-emerald-900 text-white rounded-xl p-8 flex flex-col justify-between shadow-xl relative overflow-hidden">
+          <div className="relative z-10">
+            <h3 className="font-headline text-xl font-bold mb-2">Yield Prediction 📊</h3>
+            <p className="font-inter text-xs text-emerald-200/60 uppercase tracking-widest mb-6">Algorithm v.4.2 🤖</p>
+            <div className="relative flex items-center justify-center py-6">
+              <div className="w-32 h-32 rounded-full border-[10px] border-white/10 flex items-center justify-center relative">
+                <div className="absolute inset-0 rounded-full border-[10px] border-emerald-400 border-t-transparent -rotate-45"></div>
+                <span className="font-headline text-3xl font-black italic">84%</span>
+              </div>
+            </div>
+            <p className="text-center font-inter text-sm text-emerald-100 mt-4">Estimated: 4.8 tons/acre 🚜</p>
+          </div>
+          
+          <Link to="/yield" className="w-full bg-white text-emerald-950 py-3 rounded-lg font-bold text-sm mt-8 hover:bg-emerald-50 transition-colors flex items-center justify-center gap-2 text-center">
+            <span className="material-symbols-outlined text-sm">download</span>
+            Generate Report
+          </Link>
+        </div>
+      </div>
+
+      {/* Disease Alerts & Community Feed */}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-12">
+        <div className="space-y-4">
+          <h4 className="font-headline text-lg font-bold px-2">Satellite Field Health 🛰️</h4>
+          <div className="rounded-xl overflow-hidden h-[300px] shadow-sm relative border-4 border-surface-container-high">
+            <img alt="Field Map" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDs0b8MZRtVDwLAe_GRJKWHs6jv2aq5GOYwKpmXmUCNfAwuiGpYA6dA-xI0xxfimRuOy1YSuh7CrHMxlbkFT4oa9RCz6XDxFGneqADVCqDjxDxbnKAXlcoIInbURopNTth8XHuIgJs1pf8KuVP0un5zj6pmMIKjzgeLMxcJ6YyMun2Gdl26kkTffSusSKupt_tQbc27GvCyOfMAXBvSBPD0NdD9gGVCNQFxQTQ1R5VRB6y6s3c7o45tLT-IFKuCSHctSkheOJnUwPMt"/>
+            <div className="absolute inset-0 bg-emerald-900/10 pointer-events-none"></div>
+            <div className="absolute top-4 left-4 flex gap-2">
+              <span className="bg-emerald-500 text-white px-2 py-1 rounded text-[10px] font-bold">HEALTHY ✨</span>
+            </div>
+            <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur p-2 rounded-lg shadow text-[10px] font-bold text-emerald-950">
+              UPDATED: 2H AGO 🕒
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+             <h4 className="font-headline text-lg font-bold">Recent Community Insights 🤝</h4>
+             <Link to="/community" className="text-primary font-bold text-sm hover:underline">View All</Link>
+          </div>
+          <div className="bg-surface-container-low rounded-xl p-4 space-y-4">
+            <div className="flex items-start gap-4 p-4 bg-white rounded-lg shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-secondary-fixed shrink-0 flex items-center justify-center">
+                <span className="material-symbols-outlined text-on-secondary-fixed">person</span>
+              </div>
+              <div>
+                <p className="font-inter text-sm font-bold">Soil Prepping Strategy 🌱</p>
+                <p className="font-inter text-xs text-on-surface-variant mt-1">"Has anyone tried the new bio-fertilizer for corn in clay soils?"</p>
+                <div className="mt-2 flex gap-3 text-[10px] font-bold text-primary">
+                  <span>💬 24 REPLIES</span>
+                  <span>🕒 10 MIN AGO</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-start gap-4 p-4 bg-white rounded-lg shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-tertiary-fixed shrink-0 flex items-center justify-center">
+                <span className="material-symbols-outlined text-on-tertiary-fixed">forum</span>
+              </div>
+              <div>
+                <p className="font-inter text-sm font-bold">Disease Outbreak Alert ⚠️</p>
+                <p className="font-inter text-xs text-on-surface-variant mt-1">Rust detected in neighbouring county. Adjust moisture monitors.</p>
+                <div className="mt-2 flex gap-3 text-[10px] font-bold text-primary">
+                  <span>💬 152 REPLIES</span>
+                  <span>🕒 1 HOUR AGO</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
