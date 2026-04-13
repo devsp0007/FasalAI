@@ -4,6 +4,7 @@ import { getWeather, getMarketPrices, healthCheck } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useLocation } from '../contexts/LocationContext'
 import { useAuth } from '../contexts/AuthContext'
+import AzureTranslate from '../components/AzureTranslate'
 
 export default function Dashboard() {
   const [weather, setWeather] = useState(null)
@@ -56,8 +57,8 @@ export default function Dashboard() {
         <div className="bg-gradient-to-r from-tertiary-container to-tertiary text-white p-4 md:p-5 rounded-3xl flex items-center gap-3 shadow-lg animate-fade-in-up">
           <span className="material-symbols-outlined text-2xl flex-shrink-0">warning</span>
           <div>
-            <strong className="font-headline">{t('dash_weatherAlert') || 'Weather Alert'}:</strong>{' '}
-            <span className="text-sm opacity-90">{weatherAlerts[0].message}</span>
+            <strong className="font-headline"><AzureTranslate text="Weather Alert"/>:</strong>{' '}
+            <span className="text-sm opacity-90"><AzureTranslate text={weatherAlerts[0].message}/></span>
           </div>
         </div>
       )}
@@ -69,12 +70,12 @@ export default function Dashboard() {
         </div>
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-950 via-emerald-950/60 to-transparent"></div>
         <div className="relative z-10 max-w-xl">
-          <span className="font-inter text-xs tracking-widest uppercase text-emerald-400 mb-4 block font-bold">🌾 Current Cycle: Wheat v.24</span>
-          <h2 className="font-headline text-4xl md:text-5xl font-extrabold mb-4 leading-tight">Welcome back, {userName}. <br/>Your fields are <span className="text-emerald-400">thriving</span>.</h2>
-          <p className="font-body text-emerald-100/80 mb-8 max-w-sm">Optimal harvest window predicted in 14 days. Soil moisture levels are steady at {weather?.current?.humidity || 68}%.</p>
+          <span className="font-inter text-xs tracking-widest uppercase text-emerald-400 mb-4 block font-bold">🌾 <AzureTranslate text="Current Cycle: Wheat v.24"/></span>
+          <h2 className="font-headline text-4xl md:text-5xl font-extrabold mb-4 leading-tight"><AzureTranslate text={`Welcome back, ${userName}`}/> <br/><AzureTranslate text="Your fields are "/> <span className="text-emerald-400"><AzureTranslate text="thriving"/></span>.</h2>
+          <p className="font-body text-emerald-100/80 mb-8 max-w-sm"><AzureTranslate text={`Optimal harvest window predicted in 14 days. Soil moisture levels are steady at ${weather?.current?.humidity || 68}%.`} /></p>
           <div className="flex gap-4">
-            <Link to="/yield" className="bg-primary px-8 py-3 rounded-full font-bold text-white shadow-lg hover:scale-105 transition-transform text-center">View Report</Link>
-            <Link to="/fields" className="bg-white/10 backdrop-blur-md border border-white/20 px-8 py-3 rounded-full font-bold text-white hover:bg-white/20 transition-all text-center">Sensor Data</Link>
+            <Link to="/yield" className="bg-primary px-8 py-3 rounded-full font-bold text-white shadow-lg hover:scale-105 transition-transform text-center"><AzureTranslate text="View Report"/></Link>
+            <Link to="/fields" className="bg-white/10 backdrop-blur-md border border-white/20 px-8 py-3 rounded-full font-bold text-white hover:bg-white/20 transition-all text-center"><AzureTranslate text="Sensor Data"/></Link>
           </div>
         </div>
       </section>
@@ -85,7 +86,7 @@ export default function Dashboard() {
         <div className="md:col-span-4 bg-surface-container-lowest rounded-xl p-6 shadow-sm shadow-emerald-900/5 flex flex-col justify-between">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold tracking-wider">Local Weather 🌧️</p>
+              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold tracking-wider"><AzureTranslate text="Local Weather"/> 🌧️</p>
               <h3 className="font-headline text-2xl font-bold mt-1">{currentTemp ? `${Math.round(currentTemp)}°C` : '...'}</h3>
             </div>
             <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 text-3xl">
@@ -94,7 +95,7 @@ export default function Dashboard() {
           </div>
           <div className="space-y-3">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-on-surface-variant font-inter">Humidity 💧</span>
+              <span className="text-on-surface-variant font-inter"><AzureTranslate text="Humidity"/> 💧</span>
               <span className="font-bold">{currentHumidity || '0'}%</span>
             </div>
             <div className="w-full bg-surface-container-low h-1 rounded-full overflow-hidden">
@@ -102,8 +103,8 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="mt-6 flex gap-2 overflow-x-auto hide-scrollbar">
-            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] rounded-full font-bold font-inter whitespace-nowrap uppercase">{weatherEmoji} {currentCondition}</span>
-            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] rounded-full font-bold font-inter whitespace-nowrap">🍃 {weather?.current?.wind_speed || 'LOW'} WIND</span>
+            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] rounded-full font-bold font-inter whitespace-nowrap uppercase">{weatherEmoji} <AzureTranslate text={currentCondition}/></span>
+            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] rounded-full font-bold font-inter whitespace-nowrap">🍃 {weather?.current?.wind_speed || 'LOW'} <AzureTranslate text="WIND"/></span>
           </div>
         </div>
 
@@ -111,15 +112,15 @@ export default function Dashboard() {
         <div className="md:col-span-5 bg-surface-container-lowest rounded-xl p-6 shadow-sm shadow-emerald-900/5 relative overflow-hidden">
           <div className="relative z-10 flex flex-col h-full justify-between">
             <div>
-              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-2">Pest Risk Index 🐛</p>
+              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-2"><AzureTranslate text="Pest Risk Index"/> 🐛</p>
               <div className="flex items-baseline gap-2">
-                <h3 className="font-headline text-4xl font-extrabold text-tertiary">Low</h3>
-                <span className="text-tertiary/60 text-sm font-inter">Risk detected in Sector 4</span>
+                <h3 className="font-headline text-4xl font-extrabold text-tertiary"><AzureTranslate text="Low"/></h3>
+                <span className="text-tertiary/60 text-sm font-inter"><AzureTranslate text="Risk detected in Sector 4"/></span>
               </div>
-              <p className="text-sm text-on-surface-variant mt-4 font-inter leading-relaxed max-w-[200px]">Aphid population stable. No immediate treatment required for North-West plots. ✅</p>
+              <p className="text-sm text-on-surface-variant mt-4 font-inter leading-relaxed max-w-[200px]"><AzureTranslate text="Aphid population stable. No immediate treatment required for North-West plots."/> ✅</p>
             </div>
             <div className="mt-4">
-               <Link to="/pest" className="text-sm font-bold text-primary hover:underline">View Pest Analysis →</Link>
+               <Link to="/pest" className="text-sm font-bold text-primary hover:underline"><AzureTranslate text="View Pest Analysis"/> →</Link>
             </div>
           </div>
           <div className="absolute -right-8 -bottom-8 opacity-10 pointer-events-none">
@@ -131,11 +132,11 @@ export default function Dashboard() {
         <div className="md:col-span-3 flex flex-col gap-4">
           <Link to="/fields" className="flex-1 bg-primary text-white rounded-xl p-4 flex flex-col justify-center items-center gap-2 hover:bg-primary-container transition-colors text-center group">
             <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">add_location_alt</span>
-            <span className="font-headline font-bold text-sm">Add New Field 🗺️</span>
+            <span className="font-headline font-bold text-sm"><AzureTranslate text="Add New Field"/> 🗺️</span>
           </Link>
           <Link to="/recommend" className="flex-1 bg-secondary-container text-on-secondary-container rounded-xl p-4 flex flex-col justify-center items-center gap-2 hover:opacity-90 transition-opacity text-center group">
             <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">lightbulb</span>
-            <span className="font-headline font-bold text-sm">Get Advisory 💡</span>
+            <span className="font-headline font-bold text-sm"><AzureTranslate text="Get Advisory"/> 💡</span>
           </Link>
         </div>
       </div>
@@ -146,15 +147,15 @@ export default function Dashboard() {
         <div className="lg:col-span-2 bg-surface-container-high rounded-xl p-8 overflow-hidden">
           <div className="flex justify-between items-end mb-8">
             <div>
-              <h3 className="font-headline text-2xl font-bold">Market Price Trends 📈</h3>
-              <p className="font-inter text-sm text-on-surface-variant">Live updates from national trade centers 🏢</p>
+              <h3 className="font-headline text-2xl font-bold"><AzureTranslate text="Market Price Trends"/> 📈</h3>
+              <p className="font-inter text-sm text-on-surface-variant"><AzureTranslate text="Live updates from national trade centers"/> 🏢</p>
             </div>
-            <Link to="/market" className="text-primary font-bold text-sm font-inter flex items-center gap-1 hover:underline">View All <span className="material-symbols-outlined text-sm">arrow_forward</span></Link>
+            <Link to="/market" className="text-primary font-bold text-sm font-inter flex items-center gap-1 hover:underline"><AzureTranslate text="View All"/> <span className="material-symbols-outlined text-sm">arrow_forward</span></Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Dynamic live price from API if available, else fallback */}
             <div className="bg-white p-6 rounded-lg shadow-sm border-2 border-primary/20">
-              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold">Wheat (Live) 🌾</p>
+              <p className="font-inter text-xs text-on-surface-variant uppercase font-bold"><AzureTranslate text="Wheat (Live)"/> 🌾</p>
               <div className="mt-4 flex items-center justify-between">
                 <span className="font-headline text-xl font-bold">{prices?.latest_price ? `₹${prices.latest_price.toLocaleString()}` : '...'}</span>
                 {prices?.trend && (
@@ -186,20 +187,20 @@ export default function Dashboard() {
         {/* Yield Prediction */}
         <div className="bg-emerald-900 text-white rounded-xl p-8 flex flex-col justify-between shadow-xl relative overflow-hidden">
           <div className="relative z-10">
-            <h3 className="font-headline text-xl font-bold mb-2">Yield Prediction 📊</h3>
-            <p className="font-inter text-xs text-emerald-200/60 uppercase tracking-widest mb-6">Algorithm v.4.2 🤖</p>
+            <h3 className="font-headline text-xl font-bold mb-2"><AzureTranslate text="Yield Prediction"/> 📊</h3>
+            <p className="font-inter text-xs text-emerald-200/60 uppercase tracking-widest mb-6"><AzureTranslate text="Algorithm v.4.2"/> 🤖</p>
             <div className="relative flex items-center justify-center py-6">
               <div className="w-32 h-32 rounded-full border-[10px] border-white/10 flex items-center justify-center relative">
                 <div className="absolute inset-0 rounded-full border-[10px] border-emerald-400 border-t-transparent -rotate-45"></div>
                 <span className="font-headline text-3xl font-black italic">84%</span>
               </div>
             </div>
-            <p className="text-center font-inter text-sm text-emerald-100 mt-4">Estimated: 4.8 tons/acre 🚜</p>
+            <p className="text-center font-inter text-sm text-emerald-100 mt-4"><AzureTranslate text="Estimated: 4.8 tons/acre"/> 🚜</p>
           </div>
           
           <Link to="/yield" className="w-full bg-white text-emerald-950 py-3 rounded-lg font-bold text-sm mt-8 hover:bg-emerald-50 transition-colors flex items-center justify-center gap-2 text-center">
             <span className="material-symbols-outlined text-sm">download</span>
-            Generate Report
+            <AzureTranslate text="Generate Report"/>
           </Link>
         </div>
       </div>
@@ -207,23 +208,23 @@ export default function Dashboard() {
       {/* Disease Alerts & Community Feed */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-12">
         <div className="space-y-4">
-          <h4 className="font-headline text-lg font-bold px-2">Satellite Field Health 🛰️</h4>
+          <h4 className="font-headline text-lg font-bold px-2"><AzureTranslate text="Satellite Field Health"/> 🛰️</h4>
           <div className="rounded-xl overflow-hidden h-[300px] shadow-sm relative border-4 border-surface-container-high">
             <img alt="Field Map" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDs0b8MZRtVDwLAe_GRJKWHs6jv2aq5GOYwKpmXmUCNfAwuiGpYA6dA-xI0xxfimRuOy1YSuh7CrHMxlbkFT4oa9RCz6XDxFGneqADVCqDjxDxbnKAXlcoIInbURopNTth8XHuIgJs1pf8KuVP0un5zj6pmMIKjzgeLMxcJ6YyMun2Gdl26kkTffSusSKupt_tQbc27GvCyOfMAXBvSBPD0NdD9gGVCNQFxQTQ1R5VRB6y6s3c7o45tLT-IFKuCSHctSkheOJnUwPMt"/>
             <div className="absolute inset-0 bg-emerald-900/10 pointer-events-none"></div>
             <div className="absolute top-4 left-4 flex gap-2">
-              <span className="bg-emerald-500 text-white px-2 py-1 rounded text-[10px] font-bold">HEALTHY ✨</span>
+              <span className="bg-emerald-500 text-white px-2 py-1 rounded text-[10px] font-bold"><AzureTranslate text="HEALTHY"/> ✨</span>
             </div>
             <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur p-2 rounded-lg shadow text-[10px] font-bold text-emerald-950">
-              UPDATED: 2H AGO 🕒
+              <AzureTranslate text="UPDATED: 2H AGO"/> 🕒
             </div>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
-             <h4 className="font-headline text-lg font-bold">Recent Community Insights 🤝</h4>
-             <Link to="/community" className="text-primary font-bold text-sm hover:underline">View All</Link>
+             <h4 className="font-headline text-lg font-bold"><AzureTranslate text="Recent Community Insights"/> 🤝</h4>
+             <Link to="/community" className="text-primary font-bold text-sm hover:underline"><AzureTranslate text="View All"/></Link>
           </div>
           <div className="bg-surface-container-low rounded-xl p-4 space-y-4">
             <div className="flex items-start gap-4 p-4 bg-white rounded-lg shadow-sm">
@@ -231,11 +232,11 @@ export default function Dashboard() {
                 <span className="material-symbols-outlined text-on-secondary-fixed">person</span>
               </div>
               <div>
-                <p className="font-inter text-sm font-bold">Soil Prepping Strategy 🌱</p>
-                <p className="font-inter text-xs text-on-surface-variant mt-1">"Has anyone tried the new bio-fertilizer for corn in clay soils?"</p>
+                <p className="font-inter text-sm font-bold"><AzureTranslate text="Soil Prepping Strategy"/> 🌱</p>
+                <p className="font-inter text-xs text-on-surface-variant mt-1">"<AzureTranslate text="Has anyone tried the new bio-fertilizer for corn in clay soils?"/>"</p>
                 <div className="mt-2 flex gap-3 text-[10px] font-bold text-primary">
-                  <span>💬 24 REPLIES</span>
-                  <span>🕒 10 MIN AGO</span>
+                  <span>💬 24 <AzureTranslate text="REPLIES"/></span>
+                  <span>🕒 10 <AzureTranslate text="MIN AGO"/></span>
                 </div>
               </div>
             </div>
@@ -244,11 +245,11 @@ export default function Dashboard() {
                 <span className="material-symbols-outlined text-on-tertiary-fixed">forum</span>
               </div>
               <div>
-                <p className="font-inter text-sm font-bold">Disease Outbreak Alert ⚠️</p>
-                <p className="font-inter text-xs text-on-surface-variant mt-1">Rust detected in neighbouring county. Adjust moisture monitors.</p>
+                <p className="font-inter text-sm font-bold"><AzureTranslate text="Disease Outbreak Alert"/> ⚠️</p>
+                <p className="font-inter text-xs text-on-surface-variant mt-1"><AzureTranslate text="Rust detected in neighbouring county. Adjust moisture monitors."/></p>
                 <div className="mt-2 flex gap-3 text-[10px] font-bold text-primary">
-                  <span>💬 152 REPLIES</span>
-                  <span>🕒 1 HOUR AGO</span>
+                  <span>💬 152 <AzureTranslate text="REPLIES"/></span>
+                  <span>🕒 1 <AzureTranslate text="HOUR AGO"/></span>
                 </div>
               </div>
             </div>

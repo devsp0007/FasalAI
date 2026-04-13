@@ -105,10 +105,6 @@ function Sidebar({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Language Switcher in sidebar */}
-        <div className="px-4 mb-3">
-          <LanguageSwitcher variant="sidebar" />
-        </div>
 
         {/* Navigation */}
         <nav className="flex-1 space-y-0.5 px-3 overflow-y-auto hide-scrollbar">
@@ -194,20 +190,22 @@ function TopBar({ onMenuToggle }) {
         </button>
         <div>
           <h2 className="font-headline font-bold text-lg text-on-surface tracking-tight">{title}</h2>
-          {detectedLoc?.city && (
-            <div className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-primary text-xs">location_on</span>
-              <span className="font-label text-[11px] text-on-surface-variant/60">
-                {detectedLoc.city}{detectedLoc.state ? `, ${detectedLoc.state}` : ''}
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Language switcher (desktop) */}
-        <div className="hidden md:block">
+        {/* Location Pin (Top Right) */}
+        {detectedLoc?.city && (
+          <div className="hidden sm:flex items-center gap-1 bg-surface-container rounded-full px-3 py-1.5 shadow-sm border border-surface-variant/20 hover:bg-surface-container-high transition-colors">
+            <span className="material-symbols-outlined text-primary text-sm flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>pin_drop</span>
+            <span className="font-label text-xs font-semibold text-on-surface truncate max-w-[120px]">
+              {detectedLoc.city}{detectedLoc.state ? `, ${detectedLoc.state}` : ''}
+            </span>
+          </div>
+        )}
+        
+        {/* Language switcher (Visible on mobile and desktop) */}
+        <div className="block">
           <LanguageSwitcher />
         </div>
         {/* Search */}
