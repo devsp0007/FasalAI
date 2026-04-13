@@ -21,7 +21,7 @@ def load_pest_data():
             with open(PEST_KB_PATH, "r", encoding="utf-8") as f:
                 _pest_data = json.load(f)
             states = len(_pest_data.get("state_crop_map", {}))
-            profiles = len(_pest_data.get("pest_profiles", {}))
+            profiles = len(_pest_data.get("pest_library", {}))
             print(f"  [OK] Pest knowledge base loaded ({states} states, {profiles} pest profiles)")
         else:
             print(f"  [WARN] Pest KB not found at {PEST_KB_PATH}")
@@ -80,7 +80,7 @@ def get_pest_alerts(state: str, season: str = None) -> dict:
         season = get_current_season()
 
     state_crop_map = _pest_data.get("state_crop_map", {})
-    pest_profiles = _pest_data.get("pest_profiles", {})
+    pest_profiles = _pest_data.get("pest_library", {})
     crop_aliases = _pest_data.get("crop_aliases", {})
 
     # Find state data
@@ -142,7 +142,7 @@ def get_pest_for_crop(crop_key: str) -> dict:
     if _pest_data is None:
         return {"error": "Pest knowledge base not loaded"}
 
-    pest_profiles = _pest_data.get("pest_profiles", {})
+    pest_profiles = _pest_data.get("pest_library", {})
     crop_aliases = _pest_data.get("crop_aliases", {})
 
     # Direct lookup
