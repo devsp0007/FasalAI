@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import AzureTranslate from '../components/AzureTranslate'
 export default function Login() {
   const { login, register, loginWithGoogle, googleLoading, isAuthenticated } = useAuth()
   const navigate = useNavigate()
@@ -57,19 +58,19 @@ export default function Login() {
             </div>
             <div>
               <h1 className="font-headline font-extrabold text-white text-xl tracking-tight">Fasal.AI</h1>
-              <p className="font-label text-[10px] text-white/60 uppercase tracking-[0.15em]">Smart Crop Advisory</p>
+              <p className="font-label text-[10px] text-white/60 uppercase tracking-[0.15em]"><AzureTranslate text="Smart Crop Advisory" /></p>
             </div>
           </div>
 
           {/* Hero text */}
           <div className="space-y-6 max-w-md">
             <h2 className="font-headline font-extrabold text-5xl text-white leading-tight tracking-tight">
-              Cultivating<br />
-              <span className="text-primary-fixed">Intelligence</span><br />
-              for Every Acre
+              <AzureTranslate text="Cultivating" /><br />
+              <span className="text-primary-fixed"><AzureTranslate text="Intelligence" /></span><br />
+              <AzureTranslate text="for Every Acre" />
             </h2>
             <p className="text-white/70 text-base leading-relaxed">
-              AI-powered crop advisory, yield prediction, and market intelligence — designed for the modern Indian farmer.
+              <AzureTranslate text="AI-powered crop advisory, yield prediction, and market intelligence — designed for the modern Indian farmer." />
             </p>
           </div>
 
@@ -104,18 +105,18 @@ export default function Login() {
             </div>
             <div>
               <h1 className="font-headline font-extrabold text-primary text-xl tracking-tight">Fasal.AI</h1>
-              <p className="font-label text-[10px] text-on-surface-variant/50 uppercase tracking-[0.15em]">Smart Crop Advisory</p>
+              <p className="font-label text-[10px] text-on-surface-variant/50 uppercase tracking-[0.15em]"><AzureTranslate text="Smart Crop Advisory" /></p>
             </div>
           </div>
 
           <div className="mb-8">
             <h2 className="font-headline text-3xl font-extrabold text-on-surface tracking-tight">
-              {isRegister ? 'Create Account' : 'Welcome Back'} 👋
+              {isRegister ? <><AzureTranslate text="Create Account" /> 👋</> : <><AzureTranslate text="Welcome Back" /> 👋</>}
             </h2>
             <p className="text-sm text-on-surface-variant/60 mt-2 leading-relaxed">
               {isRegister
-                ? 'Join Fasal.AI to access AI-powered crop advisory'
-                : 'Login to your farm intelligence dashboard'}
+                ? <AzureTranslate text="Join Fasal.AI to access AI-powered crop advisory" />
+                : <AzureTranslate text="Login to your farm intelligence dashboard" />}
             </p>
           </div>
 
@@ -140,20 +141,20 @@ export default function Login() {
               <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
               <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
             </svg>
-            <span>{googleLoading ? 'Redirecting...' : 'Continue with Google'}</span>
+            <span>{googleLoading ? <AzureTranslate text="Redirecting..." /> : <AzureTranslate text="Continue with Google" />}</span>
           </button>
 
           {/* Divider */}
           <div className="flex items-center gap-4 my-6">
             <span className="flex-1 h-px bg-surface-container-high" />
-            <span className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest font-bold">or</span>
+            <span className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest font-bold"><AzureTranslate text="or" /></span>
             <span className="flex-1 h-px bg-surface-container-high" />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
               <div className="space-y-1.5">
-                <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Full Name</label>
+                <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider"><AzureTranslate text="Full Name" /></label>
                 <input
                   id="name-input"
                   type="text"
@@ -167,7 +168,7 @@ export default function Login() {
             )}
 
             <div className="space-y-1.5">
-              <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Phone Number</label>
+              <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider"><AzureTranslate text="Phone Number" /></label>
               <input
                 id="phone-input"
                 type="tel"
@@ -181,7 +182,7 @@ export default function Login() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Password</label>
+              <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider"><AzureTranslate text="Password" /></label>
               <input
                 id="password-input"
                 type="password"
@@ -203,17 +204,17 @@ export default function Login() {
               {loading ? (
                 <>
                   <div className="spinner-sm !border-white/30 !border-t-white" />
-                  Please wait...
+                  <AzureTranslate text="Please wait..." />
                 </>
               ) : isRegister ? (
                 <>
                   <span className="material-symbols-outlined text-lg">person_add</span>
-                  Create Account
+                  <AzureTranslate text="Create Account" />
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-lg">login</span>
-                  Login to Dashboard
+                  <AzureTranslate text="Login to Dashboard" />
                 </>
               )}
             </button>
@@ -221,14 +222,14 @@ export default function Login() {
 
           <div className="mt-8 text-center">
             <span className="text-sm text-on-surface-variant/40">
-              {isRegister ? 'Already have an account? ' : "Don't have an account? "}
+              {isRegister ? <AzureTranslate text="Already have an account? " /> : <AzureTranslate text="Don't have an account? " />}
             </span>
             <button
               id="toggle-auth-mode"
               className="text-primary font-bold text-sm hover:underline"
               onClick={() => { setIsRegister(!isRegister); setError('') }}
             >
-              {isRegister ? 'Login' : 'Register'}
+              {isRegister ? <AzureTranslate text="Login" /> : <AzureTranslate text="Register" />}
             </button>
           </div>
 

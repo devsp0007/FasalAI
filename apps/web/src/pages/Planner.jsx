@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
+import AzureTranslate from '../components/AzureTranslate'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const CROP_COLORS = {
@@ -38,7 +39,7 @@ export default function Planner() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Rotation Planner 🌿</h1>
+          <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight"><AzureTranslate text="Rotation Planner" /> 🌿</h1>
           <p className="font-label text-sm text-on-surface-variant/60 mt-1">{t('planner_description')} {year}</p>
         </div>
         <div className="flex gap-2">
@@ -50,7 +51,7 @@ export default function Planner() {
 
       {/* Season Legend */}
       <div className="bg-white rounded-2xl editorial-shadow p-4 flex flex-wrap gap-3 items-center">
-        <span className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest">Seasons:</span>
+        <span className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest"><AzureTranslate text="Seasons" />:</span>
         <span className="smart-chip bg-secondary-container text-on-secondary-container">❄ Rabi (Nov-Mar)</span>
         <span className="smart-chip bg-primary/10 text-primary">🌧 Kharif (Jun-Oct)</span>
         <span className="smart-chip bg-tertiary-fixed text-on-tertiary-fixed-variant">☀ Zaid (Mar-Jun)</span>
@@ -70,7 +71,7 @@ export default function Planner() {
           <table className="w-full min-w-[700px]">
             <thead>
               <tr>
-                <th className="text-left p-3 md:p-4 font-label text-xs uppercase tracking-wider text-on-surface-variant/50 bg-surface-container-low w-32">Plot</th>
+                <th className="text-left p-3 md:p-4 font-label text-xs uppercase tracking-wider text-on-surface-variant/50 bg-surface-container-low w-32"><AzureTranslate text="Plot" /></th>
                 {MONTHS.map(m => (
                   <th key={m} className="text-center p-2 md:p-3 font-label text-[10px] uppercase tracking-wider text-on-surface-variant/50 bg-surface-container-low">{m}</th>
                 ))}
@@ -79,7 +80,7 @@ export default function Planner() {
             <tbody>
               {DEMO_ROTATIONS.map(row => (
                 <tr key={row.plot} className="border-b border-surface-container-high/40 last:border-0">
-                  <td className="p-3 md:p-4 font-headline font-bold text-sm text-on-surface">{row.plot}</td>
+                  <td className="p-3 md:p-4 font-headline font-bold text-sm text-on-surface"><AzureTranslate text={row.plot} /></td>
                   {MONTHS.map((_, mi) => {
                     const entry = row.entries.find(e => mi >= e.start && mi < e.end)
                     if (!entry) return <td key={mi} className="p-1" />
@@ -96,7 +97,7 @@ export default function Planner() {
                             border: `2px solid ${entry.crop === 'fallow' ? '#e6e9e8' : `${color}40`}`,
                           }}
                         >
-                          <div className="font-headline font-bold text-xs capitalize">{entry.crop}</div>
+                          <div className="font-headline font-bold text-xs capitalize"><AzureTranslate text={entry.crop} /></div>
                           {entry.season && <div className="font-label text-[9px] opacity-60 mt-0.5">{entry.season}</div>}
                         </div>
                       </td>

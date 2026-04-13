@@ -3,6 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
 import { submitFeedback, getFeedbackHistory } from '../services/api'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
+import AzureTranslate from '../components/AzureTranslate'
 
 const FEEDBACK_AREAS = [
   { value: 'crop_recommendation', icon: 'eco', label: 'Crop Recommendation' },
@@ -65,22 +66,22 @@ export default function Feedback() {
     <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
       {/* Page Header */}
       <div>
-        <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Platform Feedback 💭</h1>
-        <p className="font-label text-sm text-on-surface-variant/60 mt-1">Help us improve Fasal.AI with your suggestions</p>
+        <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight"><AzureTranslate text="Platform Feedback" /> 💭</h1>
+        <p className="font-label text-sm text-on-surface-variant/60 mt-1"><AzureTranslate text="Help us improve Fasal.AI with your suggestions" /></p>
       </div>
 
       {/* Feedback Form */}
       <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
         <div className="p-5 md:p-6 bg-gradient-to-r from-secondary to-secondary-container text-white">
           <h3 className="font-headline font-bold text-lg flex items-center gap-2">
-            <span className="material-symbols-outlined">rate_review</span> Submit Feedback
+            <span className="material-symbols-outlined">rate_review</span> <AzureTranslate text="Submit Feedback" />
           </h3>
-          <p className="font-label text-sm text-white/70 mt-1">Your input shapes the future of this platform</p>
+          <p className="font-label text-sm text-white/70 mt-1"><AzureTranslate text="Your input shapes the future of this platform" /></p>
         </div>
         <div className="p-5 md:p-6 space-y-5">
           {success && (
             <div className="bg-secondary-container/20 text-secondary p-4 rounded-2xl flex items-center gap-2 animate-fade-in-up">
-              <span className="material-symbols-outlined">check_circle</span> Thank you! Your feedback has been submitted successfully.
+              <span className="material-symbols-outlined">check_circle</span> <AzureTranslate text="Thank you! Your feedback has been submitted successfully." />
             </div>
           )}
           {error && (
@@ -92,7 +93,7 @@ export default function Feedback() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Area Selection */}
             <div className="space-y-2">
-              <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">Which area is your feedback about? *</label>
+              <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50"><AzureTranslate text="Which area is your feedback about?" /> *</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                 {FEEDBACK_AREAS.map(opt => (
                   <button key={opt.value} type="button"
@@ -103,21 +104,21 @@ export default function Feedback() {
                         : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
                     }`}>
                     <span className="material-symbols-outlined text-sm">{opt.icon}</span>
-                    <span className="truncate">{opt.label}</span>
+                    <span className="truncate"><AzureTranslate text={opt.label} /></span>
                   </button>
                 ))}
               </div>
               {selectedArea && (
                 <div className="bg-secondary-container/15 text-secondary rounded-xl px-3 py-2 font-label text-xs animate-fade-in flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-sm">check_circle</span>
-                  Selected: <strong>{selectedArea.label}</strong>
+                  <AzureTranslate text="Selected" />: <strong><AzureTranslate text={selectedArea.label} /></strong>
                 </div>
               )}
             </div>
 
             {/* Message */}
             <div className="space-y-2">
-              <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">Your Feedback *</label>
+              <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50"><AzureTranslate text="Your Feedback" /> *</label>
               <div className="relative">
                 <textarea ref={textareaRef} value={message} onChange={e => setMessage(e.target.value)}
                   placeholder="Describe the issue or suggestion in detail..."
@@ -146,10 +147,10 @@ export default function Feedback() {
             {/* Submit */}
             <button type="submit" disabled={sending || !user}
               className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:bg-primary-container transition-all disabled:opacity-60">
-              {sending ? <><div className="spinner-sm !border-white/30 !border-t-white" /> Submitting...</>
-                : <><span className="material-symbols-outlined">send</span> Submit Feedback</>}
+              {sending ? <><div className="spinner-sm !border-white/30 !border-t-white" /> <AzureTranslate text="Submitting..." /></>
+                : <><span className="material-symbols-outlined">send</span> <AzureTranslate text="Submit Feedback" /></>}
             </button>
-            {!user && <div className="text-center font-label text-xs text-on-surface-variant/40">Please login to submit feedback</div>}
+            {!user && <div className="text-center font-label text-xs text-on-surface-variant/40"><AzureTranslate text="Please login to submit feedback" /></div>}
           </form>
         </div>
       </div>
@@ -158,7 +159,7 @@ export default function Feedback() {
       <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
         <div className="p-5 bg-surface-container-low flex items-center justify-between">
           <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-sm">history</span> Your Recent Feedback
+            <span className="material-symbols-outlined text-primary text-sm">history</span> <AzureTranslate text="Your Recent Feedback" />
           </h3>
           <span className="smart-chip bg-secondary-container text-on-secondary-container">{history.length} entries</span>
         </div>
@@ -170,8 +171,8 @@ export default function Feedback() {
               <div className="w-14 h-14 rounded-2xl bg-secondary-container/20 flex items-center justify-center mb-3">
                 <span className="material-symbols-outlined text-secondary text-2xl">edit_note</span>
               </div>
-              <h3 className="font-headline font-bold text-on-surface mb-1">No feedback yet</h3>
-              <p className="font-label text-sm text-on-surface-variant/60">Submit your first feedback above</p>
+              <h3 className="font-headline font-bold text-on-surface mb-1"><AzureTranslate text="No feedback yet" /></h3>
+              <p className="font-label text-sm text-on-surface-variant/60"><AzureTranslate text="Submit your first feedback above" /></p>
             </div>
           ) : (
             <div className="space-y-3">

@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import { getProfile, saveProfile, deleteProfile } from '../services/api'
+import AzureTranslate from '../components/AzureTranslate'
 
 export default function Profile() {
   const { t } = useLanguage()
@@ -81,8 +82,8 @@ export default function Profile() {
     <div className="space-y-6 animate-fade-in">
       {/* Page Header */}
       <div>
-        <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Account Intelligence 👤</h1>
-        <p className="font-label text-sm text-on-surface-variant/60 mt-1">Manage your profile, preferences, and notification settings</p>
+        <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight"><AzureTranslate text="Account Intelligence" /> 👤</h1>
+        <p className="font-label text-sm text-on-surface-variant/60 mt-1"><AzureTranslate text="Manage your profile, preferences, and notification settings" /></p>
       </div>
 
       {/* Save feedback */}
@@ -123,9 +124,9 @@ export default function Profile() {
               <input className={`${inputClass} opacity-60`} value={profile.phone} disabled />
             </div>
             <div className="space-y-1.5">
-              <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Email</label>
+              <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="Email" /></label>
               <input className={inputClass} type="email" value={profile.email} onChange={e => setProfile(p => ({...p, email: e.target.value}))} placeholder="your@email.com" />
-              <span className="font-label text-[10px] text-on-surface-variant/30">Required for email weather alerts via Brevo</span>
+              <span className="font-label text-[10px] text-on-surface-variant/30"><AzureTranslate text="Required for email weather alerts via Brevo" /></span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -139,11 +140,11 @@ export default function Profile() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Farm Size (acres)</label>
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="Farm Size (acres)" /></label>
                 <input className={inputClass} type="number" step="0.1" min="0" value={profile.farm_size} onChange={e => setProfile(p => ({...p, farm_size: e.target.value}))} placeholder="e.g. 5.5" />
               </div>
               <div className="space-y-1.5">
-                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Role</label>
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="Role" /></label>
                 <select className={inputClass} value={profile.role} onChange={e => setProfile(p => ({...p, role: e.target.value}))}>
                   <option value="farmer">Farmer</option>
                   <option value="advisor">Agricultural Advisor</option>
@@ -153,7 +154,7 @@ export default function Profile() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Crops Grown</label>
+              <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="Crops Grown" /></label>
               <input className={inputClass} value={profile.crops_grown} onChange={e => setProfile(p => ({...p, crops_grown: e.target.value}))} placeholder="e.g. Wheat, Rice, Sugarcane" />
             </div>
             <div className="space-y-1.5">
@@ -185,7 +186,7 @@ export default function Profile() {
               </h3>
             </div>
             <div className="p-5 space-y-0">
-              <div className="font-label text-[10px] font-bold uppercase text-on-surface-variant/30 tracking-widest mb-2">Channels</div>
+              <div className="font-label text-[10px] font-bold uppercase text-on-surface-variant/30 tracking-widest mb-2"><AzureTranslate text="Channels" /></div>
               {[
                 { key: 'push', icon: 'smartphone', label: 'Push Notifications' },
                 { key: 'sms', icon: 'sms', label: 'SMS Notifications' },
@@ -202,7 +203,7 @@ export default function Profile() {
                 </div>
               ))}
 
-              <div className="font-label text-[10px] font-bold uppercase text-on-surface-variant/30 tracking-widest mt-4 mb-2">Alert Types</div>
+              <div className="font-label text-[10px] font-bold uppercase text-on-surface-variant/30 tracking-widest mt-4 mb-2"><AzureTranslate text="Alert Types" /></div>
               {[
                 { key: 'weather', icon: 'cloud', label: 'Weather Alerts' },
                 { key: 'sowing', icon: 'eco', label: 'Sowing Reminders' },
@@ -225,12 +226,12 @@ export default function Profile() {
           <div className="bg-white rounded-2xl editorial-shadow overflow-hidden">
             <div className="p-5 bg-surface-container-low flex items-center justify-between">
               <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-sm">shutter_speed</span> Disease Detection
+                <span className="material-symbols-outlined text-primary text-sm">shutter_speed</span> <AzureTranslate text="Disease Detection" />
               </h3>
               <span className="smart-chip bg-primary/10 text-primary">AI</span>
             </div>
             <div className="p-5 space-y-3">
-              <p className="font-label text-sm text-on-surface-variant/60">Upload a leaf image to detect diseases. Our AI supports:</p>
+              <p className="font-label text-sm text-on-surface-variant/60"><AzureTranslate text="Upload a leaf image to detect diseases. Our AI supports:" /></p>
               <div className="flex flex-wrap gap-2">
                 {['Potato', 'Corn', 'Rice', 'Sugarcane'].map(c => (
                   <span key={c} className="smart-chip bg-tertiary-fixed text-on-tertiary-fixed-variant">{c}</span>
@@ -238,7 +239,7 @@ export default function Profile() {
               </div>
               <button onClick={() => navigate('/disease')}
                 className="w-full py-3 bg-primary text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-primary-container transition-all shadow-md shadow-primary/15">
-                <span className="material-symbols-outlined">shutter_speed</span> Go to Disease Detection
+                <span className="material-symbols-outlined">shutter_speed</span> <AzureTranslate text="Go to Disease Detection" />
               </button>
             </div>
           </div>
@@ -263,7 +264,7 @@ export default function Profile() {
                 </button>
                 <button onClick={handleDelete}
                   className="px-4 py-2.5 rounded-full bg-error/10 text-error text-xs font-bold hover:bg-error/20 transition-colors flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm">delete</span> Delete Account
+                  <span className="material-symbols-outlined text-sm">delete</span> <AzureTranslate text="Delete Account" />
                 </button>
               </div>
             </div>

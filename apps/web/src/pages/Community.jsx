@@ -3,6 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
 import { getCommunityMessages, sendCommunityMessage, getOnlineCount } from '../services/api'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
+import AzureTranslate from '../components/AzureTranslate'
 
 function hashColor(str) {
   let hash = 0
@@ -72,9 +73,9 @@ export default function Community() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight flex items-center gap-2">
-              Community Hub 💬
+              <AzureTranslate text="Community Hub" /> 💬
             </h1>
-            <p className="font-label text-sm text-on-surface-variant/60 mt-1">{t('community_desc') || 'Connect with other farmers, share tips, and ask questions'}</p>
+            <p className="font-label text-sm text-on-surface-variant/60 mt-1"><AzureTranslate text="Connect with other farmers, share tips, and ask questions" /></p>
           </div>
           <span className="smart-chip bg-primary/10 text-primary">
             <span className="w-2 h-2 bg-primary rounded-full animate-pulse-soft" />
@@ -153,7 +154,7 @@ export default function Community() {
         {(isListening || isProcessing) && (
           <div className="flex items-center justify-center gap-2 py-1.5 font-label text-xs text-error font-bold">
             <span className="w-2 h-2 bg-error rounded-full animate-pulse-soft" />
-            {isProcessing ? 'Processing speech...' : 'Recording... Speak now'}
+            {isProcessing ? <AzureTranslate text="Processing speech..." /> : <AzureTranslate text="Recording... Speak now" />}
           </div>
         )}
         {!user && (

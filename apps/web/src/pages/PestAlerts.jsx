@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useLocation } from '../contexts/LocationContext'
 import { getPestAlerts, getPestStates } from '../services/api'
+import AzureTranslate from '../components/AzureTranslate'
 
 export default function PestAlerts() {
   const { t } = useLanguage()
@@ -33,8 +34,8 @@ export default function PestAlerts() {
     <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
       {/* Page Header */}
       <div>
-        <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Pest Alerts ⚠️</h1>
-        <p className="font-label text-sm text-on-surface-variant/60 mt-1">Season-aware pest risk assessment and first response guidance</p>
+        <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight"><AzureTranslate text="Pest Alerts" /> ⚠️</h1>
+        <p className="font-label text-sm text-on-surface-variant/60 mt-1"><AzureTranslate text="Season-aware pest risk assessment and first response guidance" /></p>
       </div>
 
       {/* Season Banner */}
@@ -44,7 +45,7 @@ export default function PestAlerts() {
             {seasonInfo.icon === 'rain' ? '🌧' : seasonInfo.icon === 'snow' ? '❄' : '☀'}
           </div>
           <div>
-            <div className="font-headline font-bold text-lg">{seasonInfo.name || 'Current Season'}</div>
+            <div className="font-headline font-bold text-lg"><AzureTranslate text={seasonInfo.name || 'Current Season'} /></div>
             <div className="text-sm text-white/70">{seasonInfo.period || ''}</div>
           </div>
         </div>
@@ -72,7 +73,7 @@ export default function PestAlerts() {
 
       {loading && (
         <div className="flex flex-col items-center justify-center py-12 gap-4">
-          <div className="spinner" /><span className="font-label text-sm text-on-surface-variant">Loading pest alerts...</span>
+          <div className="spinner" /><span className="font-label text-sm text-on-surface-variant"><AzureTranslate text="Loading pest alerts..." /></span>
         </div>
       )}
 
@@ -99,8 +100,8 @@ export default function PestAlerts() {
                 onClick={() => setExpandedCrop(expandedCrop === idx ? null : idx)}>
                 <div className="p-4 md:p-5 bg-surface-container-low/50 flex justify-between items-center">
                   <div>
-                    <div className="font-headline font-bold text-on-surface">{crop.common_name || crop.crop}</div>
-                    {crop.note && <div className="font-label text-xs text-on-surface-variant/60 mt-0.5">{crop.note}</div>}
+                    <div className="font-headline font-bold text-on-surface"><AzureTranslate text={crop.common_name || crop.crop} /></div>
+                    {crop.note && <div className="font-label text-xs text-on-surface-variant/60 mt-0.5"><AzureTranslate text={crop.note} /></div>}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="smart-chip bg-error/10 text-error">{crop.pest_count} {t('pest_pests') || 'pests'}</span>
@@ -114,13 +115,13 @@ export default function PestAlerts() {
                       <div key={pidx} className="pb-3 last:pb-0">
                         <div className="flex items-center gap-2 mb-1.5">
                           <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: pidx === 0 ? '#ba1a1a' : pidx === 1 ? '#a36a00' : '#825400' }} />
-                          <span className="font-headline font-bold text-sm text-on-surface">{pest.pest}</span>
+                          <span className="font-headline font-bold text-sm text-on-surface"><AzureTranslate text={pest.pest} /></span>
                         </div>
                         <div className="font-label text-xs text-on-surface-variant/60 leading-relaxed">
-                          <span className="font-semibold text-on-surface">{t('pest_symptoms') || 'Symptoms'}:</span> {pest.symptoms}
+                          <span className="font-semibold text-on-surface"><AzureTranslate text="Symptoms" />:</span> <AzureTranslate text={pest.symptoms} />
                         </div>
                         <div className="font-label text-xs text-on-surface-variant/60 leading-relaxed mt-1">
-                          <span className="font-semibold text-primary">{t('pest_firstResponse') || 'Action'}:</span> {pest.first_response}
+                          <span className="font-semibold text-primary"><AzureTranslate text="Action" />:</span> <AzureTranslate text={pest.first_response} />
                         </div>
                       </div>
                     ))}

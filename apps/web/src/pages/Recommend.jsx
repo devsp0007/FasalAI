@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { recommendCrop, getStates, getCropsByState, getWeather } from '../services/api'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useLocation } from '../contexts/LocationContext'
+import AzureTranslate from '../components/AzureTranslate'
 
 const PRESETS = {
   rice_kharif: { nitrogen: 80, phosphorus: 48, potassium: 40, temperature: 27, humidity: 80, ph: 6.5, rainfall: 250, season: 'kharif', label: 'Rice Belt (Kharif)' },
@@ -96,13 +97,13 @@ export default function Recommend() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Precision Advisory 🛰️</h1>
-          <p className="font-label text-sm text-on-surface-variant/60 mt-1">AI-powered crop recommendations based on your soil & weather data</p>
+          <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight"><AzureTranslate text="Precision Advisory" /> 🛰️</h1>
+          <p className="font-label text-sm text-on-surface-variant/60 mt-1"><AzureTranslate text="AI-powered crop recommendations based on your soil & weather data" /></p>
         </div>
         <button type="button" onClick={fillCurrentWeather} disabled={weatherLoading}
           className="smart-chip bg-primary/10 text-primary hover:bg-primary/15 transition-colors cursor-pointer">
           <span className="material-symbols-outlined text-sm">my_location</span>
-          {weatherLoading ? 'Loading...' : 'Auto-fill Weather'}
+          {weatherLoading ? <AzureTranslate text="Loading..." /> : <AzureTranslate text="Auto-fill Weather" />}
         </button>
       </div>
 
@@ -113,25 +114,25 @@ export default function Recommend() {
             <div className="p-6 bg-surface-container-low">
               <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">science</span>
-                Soil Telemetry 🧪
+                <AzureTranslate text="Soil Telemetry" /> 🧪
               </h3>
-              <p className="font-label text-xs text-on-surface-variant/60 mt-1">Input current laboratory readings</p>
+              <p className="font-label text-xs text-on-surface-variant/60 mt-1"><AzureTranslate text="Input current laboratory readings" /></p>
             </div>
             <div className="p-6 space-y-5">
               {/* Location */}
               <div className="space-y-3">
                 <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-xs text-primary">location_on</span> Location
+                  <span className="material-symbols-outlined text-xs text-primary">location_on</span> <AzureTranslate text="Location" />
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <select name="state" value={form.state} onChange={handleChange}
                     className="w-full bg-surface-container-highest rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none">
-                    <option value="">Select State</option>
+                    <option value="">{t('rec_selectState') || 'Select State'}</option>
                     {states.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                   <select name="soil_type" value={form.soil_type} onChange={handleChange}
                     className="w-full bg-surface-container-highest rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none">
-                    <option value="">Select Soil</option>
+                    <option value="">{t('rec_selectSoil') || 'Select Soil'}</option>
                     {soilTypes.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
@@ -139,12 +140,12 @@ export default function Recommend() {
 
               {/* Presets */}
               <div className="space-y-2">
-                <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">{t('rec_quickPresets')}</label>
+                <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50"><AzureTranslate text="Quick Presets" /></label>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(PRESETS).map(([key, preset]) => (
                     <button key={key} onClick={() => handlePreset(key)}
                       className="px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant text-xs font-bold hover:bg-surface-container-high transition-colors">
-                      {preset.label}
+                      <AzureTranslate text={preset.label} />
                     </button>
                   ))}
                 </div>
@@ -154,7 +155,7 @@ export default function Recommend() {
                 {/* Soil NPK */}
                 <div className="space-y-3">
                   <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-xs text-primary">science</span> {t('rec_soilNutrients')}
+                    <span className="material-symbols-outlined text-xs text-primary">science</span> <AzureTranslate text="Soil Nutrients" />
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
@@ -170,7 +171,7 @@ export default function Recommend() {
                     ))}
                   </div>
                   <div className="space-y-1">
-                    <label className="font-label text-xs font-semibold text-on-surface-variant/60">{t('rec_soilPh')}</label>
+                    <label className="font-label text-xs font-semibold text-on-surface-variant/60"><AzureTranslate text="Soil pH" /></label>
                     <input type="number" name="ph" value={form.ph} onChange={handleChange} step="0.1" min="0" max="14"
                       className="w-full bg-surface-container-highest rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none" />
                   </div>
@@ -179,16 +180,16 @@ export default function Recommend() {
                 {/* Weather */}
                 <div className="space-y-3">
                   <label className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-xs text-primary">wb_sunny</span> {t('rec_weatherConditions')}
+                    <span className="material-symbols-outlined text-xs text-primary">wb_sunny</span> <AzureTranslate text="Weather Conditions" />
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { name: 'temperature', label: t('rec_temperature'), val: form.temperature, unit: '°C' },
-                      { name: 'humidity', label: t('rec_humidity'), val: form.humidity, unit: '%' },
-                      { name: 'rainfall', label: t('rec_rainfall'), val: form.rainfall, unit: 'mm' },
+                      { name: 'temperature', label: 'Temperature', val: form.temperature, unit: '°C' },
+                      { name: 'humidity', label: 'Humidity', val: form.humidity, unit: '%' },
+                      { name: 'rainfall', label: 'Rainfall', val: form.rainfall, unit: 'mm' },
                     ].map(f => (
                       <div key={f.name} className="space-y-1">
-                        <label className="font-label text-[10px] font-semibold text-on-surface-variant/50">{f.label}</label>
+                        <label className="font-label text-[10px] font-semibold text-on-surface-variant/50"><AzureTranslate text={f.label} /></label>
                         <input type="number" name={f.name} value={f.val} onChange={handleChange} step="0.1"
                           className="w-full bg-surface-container-highest rounded-xl px-3 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none" />
                       </div>
@@ -196,7 +197,7 @@ export default function Recommend() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="font-label text-[10px] font-semibold text-on-surface-variant/50">{t('rec_season')}</label>
+                      <label className="font-label text-[10px] font-semibold text-on-surface-variant/50"><AzureTranslate text="Season" /></label>
                       <select name="season" value={form.season} onChange={handleChange}
                         className="w-full bg-surface-container-highest rounded-xl px-3 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none">
                         <option value="kharif">Kharif (Jun-Oct)</option>
@@ -205,7 +206,7 @@ export default function Recommend() {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="font-label text-[10px] font-semibold text-on-surface-variant/50">{t('rec_previousCrop')}</label>
+                      <label className="font-label text-[10px] font-semibold text-on-surface-variant/50"><AzureTranslate text="Previous Crop" /></label>
                       <select name="previous_crop" value={form.previous_crop || ''} onChange={handleChange}
                         className="w-full bg-surface-container-highest rounded-xl px-3 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none">
                         <option value="">None</option>
@@ -220,7 +221,7 @@ export default function Recommend() {
                 <button type="submit" disabled={loading}
                   className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:bg-primary-container transition-all disabled:opacity-60">
                   <span className="material-symbols-outlined">{loading ? 'hourglass_empty' : 'auto_awesome'}</span>
-                  {loading ? t('rec_analyzing') : t('rec_getRecommendations')}
+                  {loading ? <AzureTranslate text="Analyzing..." /> : <AzureTranslate text="Get Recommendations" />}
                 </button>
               </form>
             </div>
@@ -234,21 +235,21 @@ export default function Recommend() {
             <div className="bg-white rounded-2xl editorial-shadow overflow-hidden animate-fade-in">
               <div className="p-5 bg-surface-container-low flex items-center justify-between">
                 <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">public</span> Best Crops for {form.state}
+                  <span className="material-symbols-outlined text-primary">public</span> <AzureTranslate text={`Best Crops for ${form.state}`} />
                 </h3>
-                {stateCrops.climate && <span className="smart-chip bg-primary/10 text-primary">{stateCrops.climate.split(',')[0]}</span>}
+                {stateCrops.climate && <span className="smart-chip bg-primary/10 text-primary"><AzureTranslate text={stateCrops.climate.split(',')[0]} /></span>}
               </div>
               <div className="p-5">
-                <p className="text-sm text-on-surface-variant/60 mb-4">Based on your state's climate and soil. Enter soil details for more accurate AI-powered results.</p>
+                <p className="text-sm text-on-surface-variant/60 mb-4"><AzureTranslate text="Based on your state's climate and soil. Enter soil details for more accurate AI-powered results." /></p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {stateCrops.crops.slice(0, 12).map((crop, i) => (
                     <div key={i} className="bg-secondary-container/20 rounded-2xl p-3 hover:bg-secondary-container/35 transition-colors">
                       <div className="font-headline font-bold text-sm text-on-surface flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-primary text-sm">eco</span>
-                        {crop.name || crop}
+                        <AzureTranslate text={crop.name || crop} />
                       </div>
-                      {crop.season && <div className="font-label text-[10px] text-on-surface-variant/60 mt-1">{crop.season}</div>}
-                      {crop.reason && <div className="font-label text-[10px] text-secondary mt-0.5">{crop.reason}</div>}
+                      {crop.season && <div className="font-label text-[10px] text-on-surface-variant/60 mt-1"><AzureTranslate text={crop.season} /></div>}
+                      {crop.reason && <div className="font-label text-[10px] text-secondary mt-0.5"><AzureTranslate text={crop.reason} /></div>}
                     </div>
                   ))}
                 </div>
@@ -258,13 +259,13 @@ export default function Recommend() {
 
           {stateLoading && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <div className="spinner" /><span className="font-label text-sm text-on-surface-variant/60">Loading state recommendations...</span>
+              <div className="spinner" /><span className="font-label text-sm text-on-surface-variant/60"><AzureTranslate text="Loading state recommendations..." /></span>
             </div>
           )}
 
           {error && (
             <div className="bg-error-container/30 text-on-error-container p-4 rounded-2xl flex items-center gap-2 animate-fade-in">
-              <span className="material-symbols-outlined text-error">error</span> {error}
+              <span className="material-symbols-outlined text-error">error</span> <AzureTranslate text={error} />
             </div>
           )}
 
@@ -273,29 +274,29 @@ export default function Recommend() {
               <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
                 <span className="material-symbols-outlined text-primary text-4xl">eco</span>
               </div>
-              <h3 className="font-headline font-bold text-lg text-on-surface mb-2">{t('rec_enterData')}</h3>
-              <p className="text-sm text-on-surface-variant/60 max-w-sm">{t('rec_enterDataDesc')}</p>
+              <h3 className="font-headline font-bold text-lg text-on-surface mb-2"><AzureTranslate text="Enter Your Data" /></h3>
+              <p className="text-sm text-on-surface-variant/60 max-w-sm"><AzureTranslate text="Fill in your soil nutrient levels and weather conditions to get AI-powered crop recommendations." /></p>
               <p className="text-xs text-on-surface-variant/40 mt-3 flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm text-tertiary">lightbulb</span>
-                Select your state first to see location-based crop suggestions!
+                <AzureTranslate text="Select your state first to see location-based crop suggestions!" />
               </p>
             </div>
           )}
 
           {loading && (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
-              <div className="spinner" /><span className="font-label text-sm text-on-surface-variant">{t('rec_runningModel')}</span>
+              <div className="spinner" /><span className="font-label text-sm text-on-surface-variant"><AzureTranslate text="Running AI model..." /></span>
             </div>
           )}
 
           {result && !loading && (
             <div className="space-y-4 animate-fade-in-up stagger-children">
               <div className="flex items-center justify-between px-1">
-                <h2 className="font-headline text-xl font-extrabold text-on-surface">{t('rec_topRecommendations')}</h2>
+                <h2 className="font-headline text-xl font-extrabold text-on-surface"><AzureTranslate text="Top Recommendations" /></h2>
                 <div className="flex gap-2">
                   <span className="smart-chip bg-primary/10 text-primary">{result.inference_ms}ms</span>
                   {result.dataset_version === 'v2_state_aware' && (
-                    <span className="smart-chip bg-secondary-container text-on-secondary-container">State-Aware</span>
+                    <span className="smart-chip bg-secondary-container text-on-secondary-container"><AzureTranslate text="State-Aware" /></span>
                   )}
                 </div>
               </div>
@@ -310,13 +311,13 @@ export default function Recommend() {
                         rec.rank === 1 ? 'bg-primary text-white' : rec.rank === 2 ? 'bg-primary/10 text-primary' : 'bg-surface-container text-on-surface-variant'
                       }`}>#{rec.rank}</div>
                       <div>
-                        <div className="font-headline font-extrabold text-xl text-on-surface capitalize">{rec.crop}</div>
-                        <span className="smart-chip bg-secondary-container/50 text-on-secondary-container mt-1">{rec.crop_family}</span>
+                        <div className="font-headline font-extrabold text-xl text-on-surface capitalize"><AzureTranslate text={rec.crop} /></div>
+                        <span className="smart-chip bg-secondary-container/50 text-on-secondary-container mt-1"><AzureTranslate text={rec.crop_family} /></span>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="font-headline font-extrabold text-2xl text-primary">{rec.confidence_pct}%</div>
-                      <div className="font-label text-[10px] text-on-surface-variant/50">confidence</div>
+                      <div className="font-label text-[10px] text-on-surface-variant/50"><AzureTranslate text="confidence" /></div>
                     </div>
                   </div>
 
@@ -327,20 +328,20 @@ export default function Recommend() {
 
                   <p className="mt-3 text-sm text-on-surface-variant/70 leading-relaxed flex items-start gap-2">
                     <span className="material-symbols-outlined text-tertiary text-sm mt-0.5 flex-shrink-0">lightbulb</span>
-                    {rec.reason}
+                    <AzureTranslate text={rec.reason} />
                   </p>
 
                   <div className="mt-4 grid grid-cols-3 gap-3">
                     <div className="bg-surface-container-low p-3 rounded-xl text-center">
-                      <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase mb-1">Sowing</div>
-                      <div className="font-headline font-bold text-xs">{rec.sowing_window.start} — {rec.sowing_window.end}</div>
+                      <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase mb-1"><AzureTranslate text="Sowing" /></div>
+                      <div className="font-headline font-bold text-xs"><AzureTranslate text={`${rec.sowing_window.start} — ${rec.sowing_window.end}`} /></div>
                     </div>
                     <div className="bg-tertiary-fixed/20 p-3 rounded-xl text-center">
                       <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase mb-1">N-P-K</div>
                       <div className="font-headline font-bold text-xs">{rec.fertilizer.nitrogen_kg_ha}-{rec.fertilizer.phosphorus_kg_ha}-{rec.fertilizer.potassium_kg_ha}</div>
                     </div>
                     <div className="bg-secondary-container/20 p-3 rounded-xl text-center">
-                      <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase mb-1">Base Score</div>
+                      <div className="font-label text-[10px] text-on-surface-variant/40 font-bold uppercase mb-1"><AzureTranslate text="Base Score" /></div>
                       <div className="font-headline font-bold text-xs">{(rec.base_score * 100).toFixed(1)}%</div>
                     </div>
                   </div>
@@ -349,7 +350,7 @@ export default function Recommend() {
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {rec.adjustments.map((adj, j) => (
                         <span key={j} className={`smart-chip ${adj.value > 0 ? 'bg-primary/10 text-primary' : 'bg-tertiary-fixed/30 text-on-tertiary-fixed-variant'}`}>
-                          {adj.rule.replace(/_/g, ' ')}: {adj.value > 0 ? '+' : ''}{adj.value}
+                          <AzureTranslate text={adj.rule.replace(/_/g, ' ')} />: {adj.value > 0 ? '+' : ''}{adj.value}
                         </span>
                       ))}
                     </div>
@@ -358,10 +359,10 @@ export default function Recommend() {
               ))}
 
               <div className="bg-surface-container-low rounded-2xl p-4 font-label text-xs text-on-surface-variant/50">
-                <strong>Model:</strong> {result.model_version} | <strong>Inference:</strong> {result.inference_ms}ms |
-                <strong> Input:</strong> N={result.input_summary.soil.N}, P={result.input_summary.soil.P}, K={result.input_summary.soil.K}, pH={result.input_summary.soil['pH']}
-                {result.input_summary.state && <> | <strong>State:</strong> {result.input_summary.state}</>}
-                {result.input_summary.soil_type && <> | <strong>Soil:</strong> {result.input_summary.soil_type}</>}
+                <strong><AzureTranslate text="Model" />:</strong> {result.model_version} | <strong><AzureTranslate text="Inference" />:</strong> {result.inference_ms}ms |
+                <strong> <AzureTranslate text="Input" />:</strong> N={result.input_summary.soil.N}, P={result.input_summary.soil.P}, K={result.input_summary.soil.K}, pH={result.input_summary.soil['pH']}
+                {result.input_summary.state && <> | <strong><AzureTranslate text="State" />:</strong> <AzureTranslate text={result.input_summary.state} /></>}
+                {result.input_summary.soil_type && <> | <strong><AzureTranslate text="Soil" />:</strong> <AzureTranslate text={result.input_summary.soil_type} /></>}
               </div>
             </div>
           )}

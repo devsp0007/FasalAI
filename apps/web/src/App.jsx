@@ -4,6 +4,7 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { LocationProvider, useLocation as useDetectedLocation } from './contexts/LocationContext'
 import LanguageSwitcher from './components/LanguageSwitcher'
+import AzureTranslate from './components/AzureTranslate'
 import Chatbot from './components/Chatbot'
 import Dashboard from './pages/Dashboard'
 import Recommend from './pages/Recommend'
@@ -19,10 +20,12 @@ import Community from './pages/Community'
 import Feedback from './pages/Feedback'
 import Login from './pages/Login'
 import Landing from './pages/Landing'
+import Weather from './pages/Weather'
 
 /* ─── Navigation Config ─────────────────────────────── */
 const NAV_ITEMS = [
   { icon: 'dashboard', label: 'Dashboard', emoji: '📊', path: '/', end: true },
+  { icon: 'cloud', label: 'Weather', emoji: '☀️', path: '/weather' },
   { icon: 'psychology', label: 'Crop Advisory', emoji: '🧭', path: '/recommend' },
   { icon: 'shutter_speed', label: 'Disease Detection', emoji: '🔬', path: '/disease' },
   { icon: 'map', label: 'My Fields', emoji: '📍', path: '/fields' },
@@ -56,6 +59,7 @@ const PAGE_TITLES = {
   '/community': 'Community Hub',
   '/feedback': 'Feedback',
   '/profile': 'Profile',
+  '/weather': 'Weather',
 }
 
 /* ─── Sidebar (Desktop) ─────────────────────────────── */
@@ -92,7 +96,7 @@ function Sidebar({ isOpen, onClose }) {
               </div>
               <div>
                 <h1 className="font-headline font-extrabold text-primary text-lg tracking-tight leading-none">Fasal.AI</h1>
-                <p className="font-label text-[10px] tracking-[0.15em] text-primary/50 uppercase mt-0.5">Premium Intelligence</p>
+                <p className="font-label text-[10px] tracking-[0.15em] text-primary/50 uppercase mt-0.5"><AzureTranslate text="Premium Intelligence" /></p>
               </div>
             </div>
             {/* Mobile close */}
@@ -125,7 +129,7 @@ function Sidebar({ isOpen, onClose }) {
                     style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>
                     {item.icon}
                   </span>
-                  <span>{isActive ? `${item.emoji} ` : ''}{item.label}</span>
+                  <span>{isActive ? `${item.emoji} ` : ''}<AzureTranslate text={item.label} /></span>
                 </>
               )}
             </NavLink>
@@ -140,7 +144,7 @@ function Sidebar({ isOpen, onClose }) {
             className="w-full flex items-center justify-center gap-2 bg-primary text-white px-4 py-3.5 rounded-full font-bold text-sm hover:bg-primary-container transition-colors shadow-lg shadow-primary/20"
           >
             <span className="material-symbols-outlined text-lg">add_circle</span>
-            New Crop Cycle
+            <AzureTranslate text="New Crop Cycle" />
           </NavLink>
 
           {/* User Info */}
@@ -151,7 +155,7 @@ function Sidebar({ isOpen, onClose }) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-[13px] text-on-surface truncate">{user.name || user.phone}</p>
-                <p className="font-label text-[10px] text-on-surface-variant/50 uppercase tracking-wider">Premium Member ⭐</p>
+                <p className="font-label text-[10px] text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="Premium Member" /> ⭐</p>
               </div>
               <button
                 onClick={logout}
@@ -189,7 +193,7 @@ function TopBar({ onMenuToggle }) {
           <span className="material-symbols-outlined">menu</span>
         </button>
         <div>
-          <h2 className="font-headline font-bold text-lg text-on-surface tracking-tight">{title}</h2>
+          <h2 className="font-headline font-bold text-lg text-on-surface tracking-tight"><AzureTranslate text={title} /></h2>
         </div>
       </div>
 
@@ -279,7 +283,7 @@ function BottomNav() {
               `}
             >
               <span className="material-symbols-outlined">{item.icon}</span>
-              <span className="font-label text-[10px] font-bold leading-tight">{item.label}</span>
+              <span className="font-label text-[10px] font-bold leading-tight"><AzureTranslate text={item.label} /></span>
             </NavLink>
           ))}
         </div>
@@ -307,7 +311,7 @@ function BottomNav() {
                   ) : (
                     <span className="material-symbols-outlined text-xl">{item.icon}</span>
                   )}
-                  <span className="font-label text-[10px] font-bold">{item.label}</span>
+                  <span className="font-label text-[10px] font-bold"><AzureTranslate text={item.label} /></span>
                 </>
               )}
             </NavLink>
@@ -318,7 +322,7 @@ function BottomNav() {
             onClick={() => setMoreOpen(prev => !prev)}
           >
             <span className="material-symbols-outlined text-xl">{moreOpen ? 'close' : 'more_horiz'}</span>
-            <span className="font-label text-[10px] font-bold">{moreOpen ? 'Close' : 'More'}</span>
+            <span className="font-label text-[10px] font-bold"><AzureTranslate text={moreOpen ? 'Close' : 'More'} /></span>
           </button>
         </div>
       </nav>
@@ -370,6 +374,7 @@ function AppLayout() {
             <Route path="/community" element={<Community />} />
             <Route path="/feedback" element={<Feedback />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/weather" element={<Weather />} />
           </Routes>
         </div>
       </main>

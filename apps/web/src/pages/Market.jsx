@@ -3,6 +3,7 @@ import { getMarketPrices, predictPrice, getMarketMetadata } from '../services/ap
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useLocation } from '../contexts/LocationContext'
+import AzureTranslate from '../components/AzureTranslate'
 
 export default function Market() {
   const { t } = useLanguage()
@@ -60,8 +61,8 @@ export default function Market() {
     <div className="space-y-6 animate-fade-in">
       {/* Page Header */}
       <div>
-        <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Market Intelligence 📈</h1>
-        <p className="font-label text-sm text-on-surface-variant/60 mt-1">Real-time mandi prices and AI-powered price forecasting</p>
+        <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight"><AzureTranslate text="Market Intelligence" /> 📈</h1>
+        <p className="font-label text-sm text-on-surface-variant/60 mt-1"><AzureTranslate text="Real-time mandi prices and AI-powered price forecasting" /></p>
       </div>
 
       {/* ── Price Chart ── */}
@@ -86,7 +87,7 @@ export default function Market() {
               <option value={365}>1 year</option>
             </select>
             {priceData?.source === 'agmarknet' && (
-              <span className="smart-chip bg-primary/10 text-primary">Real Data</span>
+              <span className="smart-chip bg-primary/10 text-primary"><AzureTranslate text="Real Data" /></span>
             )}
           </div>
         </div>
@@ -150,7 +151,7 @@ export default function Market() {
             {t('market_pricePrediction')}
           </h3>
           <div className="flex gap-2">
-            <span className="smart-chip bg-secondary-container text-on-secondary-container">XGBoost Model</span>
+            <span className="smart-chip bg-secondary-container text-on-secondary-container"><AzureTranslate text="XGBoost Model" /></span>
             {detectedCity && (
               <span className="smart-chip bg-primary/10 text-primary">
                 <span className="material-symbols-outlined text-xs">location_on</span> {detectedCity}
@@ -178,7 +179,7 @@ export default function Market() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">District</label>
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="District" /></label>
                 <div className="bg-secondary-container/20 rounded-xl px-4 py-3 flex items-center gap-2 font-medium text-sm text-primary">
                   <span className="material-symbols-outlined text-sm">location_on</span>
                   {predForm.district || detectedCity || 'Detecting...'}
@@ -187,17 +188,17 @@ export default function Market() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Min Price (₹)</label>
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="Min Price (₹)" /></label>
                 <input type="number" className={inputClass}
                   value={predForm.min_price} onChange={e => setPredForm(f => ({...f, min_price: +e.target.value}))} />
               </div>
               <div className="space-y-1.5">
-                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Max Price (₹)</label>
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="Max Price (₹)" /></label>
                 <input type="number" className={inputClass}
                   value={predForm.max_price} onChange={e => setPredForm(f => ({...f, max_price: +e.target.value}))} />
               </div>
               <div className="space-y-1.5">
-                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider">Month</label>
+                <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="Month" /></label>
                 <select className={inputClass}
                   value={predForm.month} onChange={e => setPredForm(f => ({...f, month: +e.target.value}))}>
                   {[...Array(12)].map((_, i) => <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('default', {month:'long'})}</option>)}

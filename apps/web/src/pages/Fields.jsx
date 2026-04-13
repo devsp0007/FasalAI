@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { getFields, createField, deleteFieldById } from '../services/api'
+import AzureTranslate from '../components/AzureTranslate'
 
 const IRRIGATION_TYPES = ['Tubewell', 'Canal', 'Rainfed', 'Drip', 'Sprinkler']
 const SOIL_HEALTH_OPTIONS = [
@@ -84,8 +85,8 @@ export default function Fields() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">My Fields 📍</h1>
-          <p className="font-label text-sm text-on-surface-variant/60 mt-1">{fields.length} plots registered · {totalArea.toFixed(1)} hectares total</p>
+          <h1 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight"><AzureTranslate text="My Fields" /> 📍</h1>
+          <p className="font-label text-sm text-on-surface-variant/60 mt-1"><AzureTranslate text={`${fields.length} plots registered · ${totalArea.toFixed(1)} hectares total`} /></p>
         </div>
         <button onClick={() => { setShowAddModal(true); setError(null); setAddForm({ ...EMPTY_FORM }) }}
           className="px-6 py-3 bg-primary text-white font-bold rounded-full shadow-lg shadow-primary/20 flex items-center gap-2 hover:bg-primary-container transition-all text-sm">
@@ -116,14 +117,14 @@ export default function Fields() {
 
       {/* Field Cards */}
       {fieldsLoading ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-4"><div className="spinner" /><span className="font-label text-sm text-on-surface-variant">Loading fields...</span></div>
+        <div className="flex flex-col items-center justify-center py-16 gap-4"><div className="spinner" /><span className="font-label text-sm text-on-surface-variant"><AzureTranslate text="Loading fields..." /></span></div>
       ) : fields.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
             <span className="material-symbols-outlined text-primary text-4xl">map</span>
           </div>
-          <h3 className="font-headline font-bold text-lg text-on-surface mb-2">No Fields Added Yet</h3>
-          <p className="text-sm text-on-surface-variant/60">Click "Add Field" to register your first farm plot</p>
+          <h3 className="font-headline font-bold text-lg text-on-surface mb-2"><AzureTranslate text="No Fields Added Yet" /></h3>
+          <p className="text-sm text-on-surface-variant/60"><AzureTranslate text='Click "Add Field" to register your first farm plot' /></p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -191,7 +192,7 @@ export default function Fields() {
             {/* Soil */}
             <div className="space-y-4">
               <h4 className="font-headline font-bold flex items-center gap-2 text-on-surface">
-                <span className="material-symbols-outlined text-primary text-sm">science</span> Soil Nutrients (kg/ha)
+                <span className="material-symbols-outlined text-primary text-sm">science</span> <AzureTranslate text="Soil Nutrients (kg/ha)" />
               </h4>
               {[
                 { label: 'Nitrogen (N)', value: selected.soil_n || 0, max: 200, color: '#006b47' },
@@ -217,7 +218,7 @@ export default function Fields() {
             {/* Info Table */}
             <div>
               <h4 className="font-headline font-bold flex items-center gap-2 text-on-surface mb-4">
-                <span className="material-symbols-outlined text-primary text-sm">info</span> Plot Information
+                <span className="material-symbols-outlined text-primary text-sm">info</span> <AzureTranslate text="Plot Information" />
               </h4>
               <div className="space-y-0">
                 {[
@@ -242,7 +243,7 @@ export default function Fields() {
           <div className="bg-white rounded-3xl editorial-shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto hide-scrollbar animate-fade-in-scale" onClick={e => e.stopPropagation()}>
             <div className="p-6 bg-gradient-to-r from-primary to-primary-container text-white flex items-center justify-between rounded-t-3xl">
               <h3 className="font-headline font-bold flex items-center gap-2">
-                <span className="material-symbols-outlined">agriculture</span> Add New Field
+                <span className="material-symbols-outlined">agriculture</span> <AzureTranslate text="Add New Field" />
               </h3>
               <button onClick={() => setShowAddModal(false)} className="p-1 rounded-full hover:bg-white/20 transition-colors">
                 <span className="material-symbols-outlined">close</span>
@@ -256,18 +257,18 @@ export default function Fields() {
               )}
               <form onSubmit={handleAddField} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Field Name *</label>
+                  <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider"><AzureTranslate text="Field Name" /> *</label>
                   <input className={inputClass} placeholder="e.g. South Field, Plot A"
                     value={addForm.label} onChange={e => setAddForm(f => ({...f, label: e.target.value}))} required />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Area (hectares) *</label>
+                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider"><AzureTranslate text="Area (hectares)" /> *</label>
                     <input className={inputClass} type="number" step="0.1" min="0.01"
                       value={addForm.area_ha} onChange={e => setAddForm(f => ({...f, area_ha: +e.target.value}))} required />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Status</label>
+                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider"><AzureTranslate text="Status" /></label>
                     <select className={inputClass} value={addForm.status} onChange={e => setAddForm(f => ({...f, status: e.target.value}))}>
                       <option value="active">Active</option>
                       <option value="fallow">Fallow</option>
@@ -275,14 +276,14 @@ export default function Fields() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Irrigation Type</label>
+                  <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider"><AzureTranslate text="Irrigation Type" /></label>
                   <select className={inputClass} value={addForm.irrigation} onChange={e => setAddForm(f => ({...f, irrigation: e.target.value}))}>
                     {IRRIGATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 {/* Soil health presets */}
                 <div className="space-y-2">
-                  <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Soil Health</label>
+                  <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider"><AzureTranslate text="Soil Health" /></label>
                   <div className="flex flex-wrap gap-2">
                     {SOIL_HEALTH_OPTIONS.map(opt => (
                       <button key={opt.label} type="button" onClick={() => handleSoilPreset(opt)}
@@ -307,14 +308,14 @@ export default function Fields() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Previous Crop</label>
+                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider"><AzureTranslate text="Previous Crop" /></label>
                     <select className={inputClass} value={addForm.previous_crop} onChange={e => setAddForm(f => ({...f, previous_crop: e.target.value}))}>
                       <option value="">— None —</option>
                       {CROP_LIST.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider">Current Crop</label>
+                    <label className="font-label text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider"><AzureTranslate text="Current Crop" /></label>
                     <select className={inputClass} value={addForm.current_crop} onChange={e => setAddForm(f => ({...f, current_crop: e.target.value}))}>
                       <option value="">— None —</option>
                       {CROP_LIST.map(c => <option key={c} value={c}>{c}</option>)}
@@ -323,8 +324,8 @@ export default function Fields() {
                 </div>
                 <button type="submit" disabled={saving}
                   className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:bg-primary-container transition-all disabled:opacity-60">
-                  {saving ? <><div className="spinner-sm !border-white/30 !border-t-white" /> Saving...</>
-                    : <><span className="material-symbols-outlined">agriculture</span> Add Field</>}
+                  {saving ? <><div className="spinner-sm !border-white/30 !border-t-white" /> <AzureTranslate text="Saving..." /></>
+                    : <><span className="material-symbols-outlined">agriculture</span> <AzureTranslate text="Add Field" /></>}
                 </button>
               </form>
             </div>
