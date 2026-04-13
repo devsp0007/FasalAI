@@ -1016,3 +1016,23 @@ async def speech_to_text_endpoint(
         raise HTTPException(status_code=400, detail=result.get("error", "Speech recognition failed"))
 
     return result
+
+
+# ── Azure AI Translation Proxy ──────────────────────────
+
+class TranslateRequest(BaseModel):
+    texts: List[str]
+    target_language: str
+    source_language: str = "en"
+
+@router.post("/translate")
+async def translate_endpoint(req: TranslateRequest):
+    """
+    Secure proxy for translating dynamic blocks using Azure Cognitive Services.
+    """
+    from translator_service import translate_texts
+    try:
+        translated = translate_texts(req.texts, req.target_language, req.source_language)
+        return {"translations": translated}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

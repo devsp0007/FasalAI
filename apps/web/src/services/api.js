@@ -340,6 +340,16 @@ export async function speechToText(audioBlob, language = 'en-IN') {
 }
 
 
+// ── Translation (Azure) ───────────────────────────────
+
+export async function translateDynamicText(texts, targetLanguage) {
+  return apiCall('/translate', {
+    method: 'POST',
+    body: JSON.stringify({ texts, target_language: targetLanguage, source_language: 'en' }),
+  });
+}
+
+
 const api = {
   // Auth
   registerUser, loginUser, googleLogin,
@@ -376,7 +386,8 @@ const api = {
   submitFeedback, getFeedbackHistory,
   // Speech
   speechToText,
+  // Translate
+  translateDynamicText,
 };
 
 export default api;
-
