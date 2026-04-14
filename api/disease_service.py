@@ -144,6 +144,30 @@ def get_supported_disease_crops() -> list[dict]:
     return result
 
 
+def is_valid_leaf_image(img_pil) -> bool:
+    """
+    Check if the image has a minimum percentage of leaf-like colors.
+    Converts image to HSV and checks for Green, Yellow, and Brown hues.
+    """
+    try:
+        hsv_img = img_pil.convert('HSV')
+        hsv_data = np.array(hsv_img)
+        H = hsv_data[:,:,0]
+        S = hsv_data[:,:,1]
+        V = hsv_data[:,:,2]
+        
+        valid_hue = (H <= 100) | (H >= 240)
+        valid_sat = S > 30
+        valid_val = V > 30
+        leaf_mask = valid_hue & valid_sat & valid_val
+        leaf_percentage = np.mean(leaf_mask)
+        
+        return bool(leaf_percentage >= 0.12)
+    except Exception as e:
+        print(f"  [WARN] Error in leaf validation: {e}")
+        return True
+
+
 def detect_disease(crop: str, image_bytes: bytes) -> dict:
     """
     Detect disease from a leaf image using TFLite interpreter.
@@ -192,6 +216,15 @@ def detect_disease(crop: str, image_bytes: bytes) -> dict:
         img = Image.open(BytesIO(image_bytes))
         if img.mode != 'RGB':
             img = img.convert('RGB')
+            
+        # Fast leaf validation before heavy inference
+        if not is_valid_leaf_image(img):
+            return {
+                "success": True,
+                "is_valid_leaf": False,
+                "error": "The uploaded image does not appear to be a plant leaf."
+            }
+
         img = img.resize((target_w, target_h))
         img_array = np.array(img, dtype=np.float32) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
@@ -237,6 +270,7 @@ def detect_disease(crop: str, image_bytes: bytes) -> dict:
             "disease_key": disease_key,
             "confidence": round(confidence * 100, 1),
             "is_healthy": is_healthy,
+            "is_valid_leaf": True,
             "treatment": {
                 "spray": treatment.get("spray", DEFAULT_TREATMENT["spray"]),
                 "dosage": treatment.get("dosage", DEFAULT_TREATMENT["dosage"]),

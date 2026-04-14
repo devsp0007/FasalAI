@@ -196,7 +196,23 @@ export default function DiseaseDetection() {
             </div>
           )}
 
-          {result && !loading && (
+          {result && !loading && result.is_valid_leaf === false && (
+            <div className="bg-tertiary-container/20 text-on-surface p-8 rounded-3xl flex flex-col items-center justify-center text-center animate-fade-in-up editorial-shadow ring-1 ring-tertiary/30">
+              <div className="w-20 h-20 rounded-full bg-tertiary/10 flex items-center justify-center mb-5">
+                <span className="material-symbols-outlined text-tertiary text-4xl">hide_image</span>
+              </div>
+              <h3 className="font-headline font-bold text-xl mb-2"><AzureTranslate text="Invalid Image Detected" /></h3>
+              <p className="font-label text-sm text-on-surface-variant max-w-md mb-6 leading-relaxed">
+                <AzureTranslate text="Our AI detected that this might not be a plant leaf. Please upload a clear, focused photo of the affected plant leaf to get an accurate disease diagnosis." />
+              </p>
+              <button onClick={handleReset} className="px-6 py-2.5 bg-tertiary text-white font-bold rounded-full shadow-lg shadow-tertiary/20 hover:bg-tertiary/90 transition-all flex items-center gap-2">
+                <span className="material-symbols-outlined text-sm">refresh</span>
+                <AzureTranslate text="Try a Different Image" />
+              </button>
+            </div>
+          )}
+
+          {result && !loading && result.is_valid_leaf !== false && (
             <div className="space-y-4 animate-fade-in-up stagger-children">
               {/* Main Result */}
               <div className={`bg-white rounded-2xl editorial-shadow p-6 ${result.is_healthy ? 'ring-2 ring-primary/20' : 'ring-2 ring-tertiary/20'}`}>
