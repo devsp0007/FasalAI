@@ -156,13 +156,25 @@ def is_valid_leaf_image(img_pil) -> bool:
         S = hsv_data[:,:,1]
         V = hsv_data[:,:,2]
         
-        valid_hue = (H <= 100) | (H >= 240)
-        valid_sat = S > 30
-        valid_val = V > 30
+        # Narrow down the valid hue range strictly to Yellow-Green and Green.
+        # In PIL HSV (0-255): Yellow is ~43, Green is ~85.
+        # Restrict to H between 25 and 100. This perfectly EXCLUDES skin tones, wood, furniture, and red/brown walls (H 0-25).
+        # We require at least 5% of the image to have some actual green/yellow-green, 
+        # which is almost always present even on severely blighted leaves or in the background of a leaf photo.
+        valid_hue = (H >= 25) & (H <= 105)
+        
+        # Filter out very dark/black or very washed-out/grayscale areas (must be somewhat vibrant)
+        valid_sat = S > 40
+        valid_val = V > 40
+        
+        # Combine masks
         leaf_mask = valid_hue & valid_sat & valid_val
+        
+        # Calculate percentage of green/yellow-green pixels
         leaf_percentage = np.mean(leaf_mask)
         
-        return bool(leaf_percentage >= 0.12)
+        # Require at least 5% of the image to be green/yellow-green
+        return bool(leaf_percentage >= 0.05)
     except Exception as e:
         print(f"  [WARN] Error in leaf validation: {e}")
         return True
@@ -238,6 +250,14 @@ def detect_disease(crop: str, image_bytes: bytes) -> dict:
         # Get predicted class
         pred_idx = int(np.argmax(pred_proba))
         confidence = float(pred_proba[pred_idx])
+
+        # Machine learning models often produce a low maximum confidence flatline when given out-of-distribution random images
+        if confidence < 0.60:
+            return {
+                "success": True,
+                "is_valid_leaf": False,
+                "error": "The AI model confidence is too low. Please upload a clear photo of the leaf."
+            }
 
         classes = config["classes"]
         if pred_idx < len(classes):
