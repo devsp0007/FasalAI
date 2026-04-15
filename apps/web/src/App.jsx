@@ -13,13 +13,17 @@ import Market from './pages/Market'
 import Planner from './pages/Planner'
 import Profile from './pages/Profile'
 import YieldPredict from './pages/YieldPredict'
-import DiseaseDetection from './pages/DiseaseDetection'
+// DiseaseDetection merged into FieldScanner
 import PestAlerts from './pages/PestAlerts'
 import Fertilizer from './pages/Fertilizer'
 import Community from './pages/Community'
 import Feedback from './pages/Feedback'
 import Login from './pages/Login'
 import Landing from './pages/Landing'
+import WhatIfSimulator from './pages/WhatIfSimulator'
+import SmartAlerts from './pages/SmartAlerts'
+import ProfitPlanner from './pages/ProfitPlanner'
+import FieldScanner from './pages/FieldScanner'
 import Weather from './pages/Weather'
 
 /* ─── Navigation Config ─────────────────────────────── */
@@ -27,13 +31,20 @@ const NAV_ITEMS = [
   { icon: 'dashboard', label: 'Dashboard', emoji: '📊', path: '/', end: true },
   { icon: 'cloud', label: 'Weather', emoji: '☀️', path: '/weather' },
   { icon: 'psychology', label: 'Crop Advisory', emoji: '🧭', path: '/recommend' },
-  { icon: 'shutter_speed', label: 'Disease Detection', emoji: '🔬', path: '/disease' },
+  { icon: 'document_scanner', label: 'Disease Scanner', emoji: '🔬', path: '/disease' },
   { icon: 'map', label: 'My Fields', emoji: '📍', path: '/fields' },
   { icon: 'agriculture', label: 'Rotation Planner', emoji: '🌿', path: '/planner' },
   { icon: 'trending_up', label: 'Market Prices', emoji: '📈', path: '/market' },
   { icon: 'query_stats', label: 'Yield Prediction', emoji: '🎯', path: '/yield' },
   { icon: 'warning', label: 'Pest Alerts', emoji: '⚠️', path: '/pests' },
   { icon: 'water_drop', label: 'Fertilizer', emoji: '🧪', path: '/fertilizer' },
+  // ── Decision Tools
+  { section: 'Decision Tools' },
+  { icon: 'science', label: 'What-If Sim', emoji: '🔬', path: '/simulator' },
+  { icon: 'notifications_active', label: 'Smart Alerts', emoji: '🚨', path: '/smart-alerts' },
+  { icon: 'payments', label: 'Profit Planner', emoji: '💰', path: '/profit-planner' },
+  // ── Social
+  { section: 'Social' },
   { icon: 'groups', label: 'Community', emoji: '💬', path: '/community' },
   { icon: 'forum', label: 'Feedback', emoji: '💭', path: '/feedback' },
   { icon: 'person', label: 'Profile', emoji: '👤', path: '/profile' },
@@ -49,7 +60,7 @@ const BOTTOM_NAV_ITEMS = [
 const PAGE_TITLES = {
   '/': 'Dashboard',
   '/recommend': 'Crop Advisory',
-  '/disease': 'Disease Detection',
+  '/disease': 'Disease Scanner',
   '/pests': 'Pest Alerts',
   '/fields': 'My Fields',
   '/planner': 'Rotation Planner',
@@ -60,6 +71,10 @@ const PAGE_TITLES = {
   '/feedback': 'Feedback',
   '/profile': 'Profile',
   '/weather': 'Weather',
+  '/simulator': 'What-If Simulator',
+  '/smart-alerts': 'Smart Alerts',
+  '/profit-planner': 'Profit Planner',
+  '/field-scanner': 'Disease Scanner',
 }
 
 /* ─── Sidebar (Desktop) ─────────────────────────────── */
@@ -112,28 +127,40 @@ function Sidebar({ isOpen, onClose }) {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-0.5 px-3 overflow-y-auto hide-scrollbar">
-          {NAV_ITEMS.map(item => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.end}
-              className={({ isActive }) =>
-                isActive
-                  ? 'flex items-center gap-3 bg-white text-on-surface font-bold rounded-2xl px-4 py-3 editorial-shadow transition-all font-body text-[13px]'
-                  : 'flex items-center gap-3 text-on-surface-variant/70 px-4 py-2.5 hover:bg-white/50 rounded-2xl transition-all duration-200 font-body text-[13px] hover:text-on-surface'
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <span className={`material-symbols-outlined text-lg ${isActive ? 'text-primary' : ''}`}
-                    style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>
-                    {item.icon}
+          {NAV_ITEMS.map((item, idx) => {
+            // Section divider
+            if (item.section) {
+              return (
+                <div key={`section-${item.section}`} className="px-4 pt-4 pb-1">
+                  <span className="font-label text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">
+                    <AzureTranslate text={item.section} />
                   </span>
-                  <span>{isActive ? `${item.emoji} ` : ''}<AzureTranslate text={item.label} /></span>
-                </>
-              )}
-            </NavLink>
-          ))}
+                </div>
+              )
+            }
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.end}
+                className={({ isActive }) =>
+                  isActive
+                    ? 'flex items-center gap-3 bg-white text-on-surface font-bold rounded-2xl px-4 py-3 editorial-shadow transition-all font-body text-[13px]'
+                    : 'flex items-center gap-3 text-on-surface-variant/70 px-4 py-2.5 hover:bg-white/50 rounded-2xl transition-all duration-200 font-body text-[13px] hover:text-on-surface'
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span className={`material-symbols-outlined text-lg ${isActive ? 'text-primary' : ''}`}
+                      style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                      {item.icon}
+                    </span>
+                    <span>{isActive ? `${item.emoji} ` : ''}<AzureTranslate text={item.label} /></span>
+                  </>
+                )}
+              </NavLink>
+            )
+          })}
         </nav>
 
         {/* Bottom Section */}
@@ -250,7 +277,7 @@ function BottomNav() {
 
   // Items for the "more" drawer (everything not in bottom nav)
   const moreItems = NAV_ITEMS.filter(
-    item => !BOTTOM_NAV_ITEMS.some(b => b.path === item.path)
+    item => !item.section && !BOTTOM_NAV_ITEMS.some(b => b.path === item.path)
   )
 
   return (
@@ -364,7 +391,7 @@ function AppLayout() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/recommend" element={<Recommend />} />
-            <Route path="/disease" element={<DiseaseDetection />} />
+            <Route path="/disease" element={<FieldScanner />} />
             <Route path="/pests" element={<PestAlerts />} />
             <Route path="/fields" element={<Fields />} />
             <Route path="/planner" element={<Planner />} />
@@ -375,6 +402,10 @@ function AppLayout() {
             <Route path="/feedback" element={<Feedback />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/weather" element={<Weather />} />
+            <Route path="/simulator" element={<WhatIfSimulator />} />
+            <Route path="/smart-alerts" element={<SmartAlerts />} />
+            <Route path="/profit-planner" element={<ProfitPlanner />} />
+            <Route path="/field-scanner" element={<FieldScanner />} />  {/* redirect alias */}
           </Routes>
         </div>
       </main>

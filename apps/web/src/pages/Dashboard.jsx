@@ -205,19 +205,39 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Disease Alerts & Community Feed */}
+      {/* Decision Tools & Community Feed */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-12">
         <div className="space-y-4">
-          <h4 className="font-headline text-lg font-bold px-2"><AzureTranslate text="Satellite Field Health"/> 🛰️</h4>
-          <div className="rounded-xl overflow-hidden h-[300px] shadow-sm relative border-4 border-surface-container-high">
-            <img alt="Field Map" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDs0b8MZRtVDwLAe_GRJKWHs6jv2aq5GOYwKpmXmUCNfAwuiGpYA6dA-xI0xxfimRuOy1YSuh7CrHMxlbkFT4oa9RCz6XDxFGneqADVCqDjxDxbnKAXlcoIInbURopNTth8XHuIgJs1pf8KuVP0un5zj6pmMIKjzgeLMxcJ6YyMun2Gdl26kkTffSusSKupt_tQbc27GvCyOfMAXBvSBPD0NdD9gGVCNQFxQTQ1R5VRB6y6s3c7o45tLT-IFKuCSHctSkheOJnUwPMt"/>
-            <div className="absolute inset-0 bg-emerald-900/10 pointer-events-none"></div>
-            <div className="absolute top-4 left-4 flex gap-2">
-              <span className="bg-emerald-500 text-white px-2 py-1 rounded text-[10px] font-bold"><AzureTranslate text="HEALTHY"/> ✨</span>
-            </div>
-            <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur p-2 rounded-lg shadow text-[10px] font-bold text-emerald-950">
-              <AzureTranslate text="UPDATED: 2H AGO"/> 🕒
-            </div>
+          <h4 className="font-headline text-lg font-bold px-2"><AzureTranslate text="Decision Tools"/> 🧠</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/simulator" className="bg-surface-container-lowest rounded-xl p-5 shadow-sm shadow-emerald-900/5 hover:shadow-md hover:-translate-y-0.5 transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
+                <span className="material-symbols-outlined text-primary">science</span>
+              </div>
+              <p className="font-headline font-bold text-sm text-on-surface"><AzureTranslate text="What-If Simulator"/> 🔬</p>
+              <p className="font-inter text-[11px] text-on-surface-variant/60 mt-1 leading-relaxed"><AzureTranslate text="Test how changes affect crop recommendations"/></p>
+            </Link>
+            <Link to="/smart-alerts" className="bg-surface-container-lowest rounded-xl p-5 shadow-sm shadow-emerald-900/5 hover:shadow-md hover:-translate-y-0.5 transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-tertiary-fixed/30 flex items-center justify-center mb-3 group-hover:bg-tertiary-fixed/50 transition-colors">
+                <span className="material-symbols-outlined text-tertiary">notifications_active</span>
+              </div>
+              <p className="font-headline font-bold text-sm text-on-surface"><AzureTranslate text="Smart Alerts"/> 🚨</p>
+              <p className="font-inter text-[11px] text-on-surface-variant/60 mt-1 leading-relaxed"><AzureTranslate text="Weather, pest & market alerts for your area"/></p>
+            </Link>
+            <Link to="/profit-planner" className="bg-surface-container-lowest rounded-xl p-5 shadow-sm shadow-emerald-900/5 hover:shadow-md hover:-translate-y-0.5 transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-secondary-container/50 flex items-center justify-center mb-3 group-hover:bg-secondary-container transition-colors">
+                <span className="material-symbols-outlined text-on-secondary-container">payments</span>
+              </div>
+              <p className="font-headline font-bold text-sm text-on-surface"><AzureTranslate text="Profit Planner"/> 💰</p>
+              <p className="font-inter text-[11px] text-on-surface-variant/60 mt-1 leading-relaxed"><AzureTranslate text="Estimate revenue & compare crop profits"/></p>
+            </Link>
+            <Link to="/disease" className="bg-surface-container-lowest rounded-xl p-5 shadow-sm shadow-emerald-900/5 hover:shadow-md hover:-translate-y-0.5 transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mb-3 group-hover:bg-emerald-100 transition-colors">
+                <span className="material-symbols-outlined text-emerald-600">document_scanner</span>
+              </div>
+              <p className="font-headline font-bold text-sm text-on-surface"><AzureTranslate text="Disease Scanner"/> 📷</p>
+              <p className="font-inter text-[11px] text-on-surface-variant/60 mt-1 leading-relaxed"><AzureTranslate text="AI leaf scan with Gemini for any crop"/></p>
+            </Link>
           </div>
         </div>
 
