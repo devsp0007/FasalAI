@@ -43,6 +43,13 @@ Built for **Smart India Hackathon 2025** (Problem Statement ID: SIH25010).
 | 💬 **Community Hub** | User posts | Farmer-to-farmer discussion forum |
 | 📱 **Mobile Optimized** | Tailwind CSS + React | Fully responsive with animated bottom navigation |
 
+### 🏛️ Farmer Support
+
+| Feature | Type | Description |
+|---------|------|-------------|
+| 🏛️ **Government Schemes** | Real data (10 schemes) | PM-KISAN, PMFBY, KCC, AIF, PM-KUSUM, e-NAM & more — search, filter, and apply directly to official portals |
+| 🌾 **Farmer Loans** | Coming Soon teaser | 0% interest micro-loans (₹1K–₹25K) for seeds, fertilizer & farm essentials — launching soon |
+
 ---
 
 ## 🏗️ Architecture
@@ -89,7 +96,12 @@ SIH25010/
 │           ├── Fertilizer.jsx      # Fertilizer guide
 │           ├── Fields.jsx          # Field management
 │           ├── Community.jsx       # Community hub
+│           ├── Schemes.jsx         # Government schemes
+│           ├── Loans.jsx           # Loan teaser (coming soon)
 │           └── Profile.jsx         # User profile
+│
+├── apps/web/src/data/
+│   └── schemes.json               # 10 government schemes dataset
 │
 ├── datasets/                  ← Training datasets
 ├── latest_model/              ← Trained models
