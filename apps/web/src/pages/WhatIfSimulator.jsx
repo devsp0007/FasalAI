@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { recommendCrop, predictYield, getStates, getCropsByState, getWeather, getYieldDistricts } from '../services/api'
+import { recommendCrop, predictYield, getMarketPrices, getStates, getWeather, getYieldDistricts } from '../services/api'
 import { useLocation } from '../contexts/LocationContext'
 import AzureTranslate from '../components/AzureTranslate'
 
@@ -20,6 +20,32 @@ const DEFAULT_PARAMS = {
   season: 'kharif', state: '', soil_type: '',
 }
 
+// Estimated cost per hectare — same as ProfitPlanner
+const COST_PER_HA = {
+  'rice': 45000, 'wheat': 35000, 'maize': 30000, 'cotton(lint)': 55000,
+  'sugarcane': 80000, 'soyabean': 28000, 'potato': 90000, 'groundnut': 40000,
+  'gram': 25000, 'bajra': 22000, 'jowar': 22000, 'barley': 28000,
+  'onion': 75000, 'banana': 120000, 'coconut': 60000, 'urad': 25000,
+  'moong(green gram)': 25000, 'rapeseed & mustard': 30000, 'sunflower': 32000,
+  'sesamum': 28000, 'chickpea': 25000, 'lentil': 26000, 'mustard': 30000,
+  'cotton': 55000, 'arhar/tur': 28000, 'jute': 35000,
+}
+
+function getCostPerHa(crop) {
+  const lower = (crop || '').toLowerCase()
+  for (const [key, cost] of Object.entries(COST_PER_HA)) {
+    if (lower.includes(key) || key.includes(lower)) return cost
+  }
+  return 35000
+}
+
+function formatINR(amount) {
+  if (Math.abs(amount) >= 10000000) return `₹${(amount / 10000000).toFixed(2)} Cr`
+  if (Math.abs(amount) >= 100000) return `₹${(amount / 100000).toFixed(2)} L`
+  if (Math.abs(amount) >= 1000) return `₹${(amount / 1000).toFixed(1)}K`
+  return `₹${Math.round(amount)}`
+}
+
 function computeRisks(params) {
   const risks = []
   if (params.ph < 5.5) risks.push({ label: 'Acidic Soil Stress', icon: 'warning', color: 'text-tertiary' })
@@ -34,9 +60,13 @@ function computeRisks(params) {
   return risks
 }
 
+const AREA_HA = 5 // Default area for profit calculation
+
 export default function WhatIfSimulator() {
-  const { state: detectedState, latitude, longitude } = useLocation()
+  const { state: detectedState, city: detectedCity, latitude, longitude } = useLocation()
   const [states, setStates] = useState([])
+  const [districts, setDistricts] = useState([])
+  const [selectedDistrict, setSelectedDistrict] = useState('')
   const [baseline, setBaseline] = useState({ ...DEFAULT_PARAMS })
   const [whatif, setWhatif] = useState({ ...DEFAULT_PARAMS })
   const [baselineResult, setBaselineResult] = useState(null)
@@ -44,6 +74,8 @@ export default function WhatIfSimulator() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [weatherFilled, setWeatherFilled] = useState(false)
+  const [profitData, setProfitData] = useState(null)
+  const [profitLoading, setProfitLoading] = useState(false)
 
   useEffect(() => {
     getStates().then(d => setStates(d.states || [])).catch(() => {})
@@ -56,7 +88,22 @@ export default function WhatIfSimulator() {
     }
   }, [detectedState])
 
-  // Auto-fill weather on mount
+  // Load districts when state changes
+  useEffect(() => {
+    const state = baseline.state
+    if (!state) { setDistricts([]); return }
+    getYieldDistricts(state).then(d => {
+      const dists = d.districts || []
+      setDistricts(dists)
+      if (dists.length > 0) {
+        const cityUpper = (detectedCity || '').toUpperCase()
+        const match = dists.find(x => x.toUpperCase() === cityUpper)
+        setSelectedDistrict(match || dists[0])
+      }
+    }).catch(() => setDistricts([]))
+  }, [baseline.state, detectedCity])
+
+  // Auto-fill weather
   useEffect(() => {
     if (weatherFilled) return
     const lat = latitude || 25.3176
@@ -76,18 +123,48 @@ export default function WhatIfSimulator() {
     }).catch(() => {})
   }, [latitude, longitude])
 
-  const updateBaseline = (key, value) => {
-    setBaseline(p => ({ ...p, [key]: value }))
-  }
+  const updateBaseline = (key, value) => setBaseline(p => ({ ...p, [key]: value }))
+  const updateWhatif = (key, value) => setWhatif(p => ({ ...p, [key]: value }))
 
-  const updateWhatif = (key, value) => {
-    setWhatif(p => ({ ...p, [key]: value }))
+  // Compute profit for a crop
+  async function computeProfit(crop, state, district, season) {
+    try {
+      const [yieldData, priceData] = await Promise.all([
+        predictYield({ state, district, crop, season, area_ha: AREA_HA, year: 2026 }),
+        getMarketPrices(crop, state, '', '', 90),
+      ])
+      const yieldPerHa = yieldData.predicted_yield_tonnes_per_ha || 0
+      const totalProduction = yieldData.predicted_total_tonnes || 0
+      const pricePerQuintal = priceData.latest_price || priceData.average_price || 2000
+      const totalQuintals = totalProduction * 10
+      const revenue = totalQuintals * pricePerQuintal
+      const costPerHa = getCostPerHa(crop)
+      const totalCost = costPerHa * AREA_HA
+      const profit = revenue - totalCost
+
+      return {
+        crop,
+        yieldPerHa: yieldPerHa.toFixed(2),
+        totalProduction: totalProduction.toFixed(2),
+        pricePerQuintal: Math.round(pricePerQuintal),
+        revenue: Math.round(revenue),
+        totalCost: Math.round(totalCost),
+        costPerHa,
+        profit: Math.round(profit),
+        margin: revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0',
+      }
+    } catch {
+      return null
+    }
   }
 
   const handleSimulate = async () => {
     setLoading(true)
     setError(null)
+    setProfitData(null)
+
     try {
+      // 1. Get crop recommendations
       const [bRes, wRes] = await Promise.all([
         recommendCrop({
           nitrogen: baseline.nitrogen, phosphorus: baseline.phosphorus, potassium: baseline.potassium,
@@ -102,6 +179,29 @@ export default function WhatIfSimulator() {
       ])
       setBaselineResult(bRes)
       setWhatifResult(wRes)
+
+      // 2. Compute profit impact (if district is available)
+      const bCrop = bRes.recommendations?.[0]?.crop
+      const wCrop = wRes.recommendations?.[0]?.crop
+      const state = baseline.state
+      const district = selectedDistrict
+
+      if (bCrop && wCrop && state && district) {
+        setProfitLoading(true)
+        const [bProfit, wProfit] = await Promise.all([
+          computeProfit(bCrop, state, district, baseline.season === 'zaid' ? 'Whole Year' : baseline.season.charAt(0).toUpperCase() + baseline.season.slice(1)),
+          computeProfit(wCrop, whatif.state || state, district, whatif.season === 'zaid' ? 'Whole Year' : whatif.season.charAt(0).toUpperCase() + whatif.season.slice(1)),
+        ])
+        if (bProfit && wProfit) {
+          setProfitData({
+            baseline: bProfit,
+            whatif: wProfit,
+            delta: wProfit.profit - bProfit.profit,
+            deltaPct: bProfit.profit !== 0 ? (((wProfit.profit - bProfit.profit) / Math.abs(bProfit.profit)) * 100).toFixed(1) : '∞',
+          })
+        }
+        setProfitLoading(false)
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -137,7 +237,7 @@ export default function WhatIfSimulator() {
             <div className="space-y-1">
               <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="State" /></label>
               <select className={inputClass} value={values.state}
-                onChange={e => onChange('state', e.target.value)}>
+                onChange={e => { onChange('state', e.target.value); if (label === 'Current') setWhatif(p => ({ ...p, state: e.target.value })) }}>
                 <option value="">Select State</option>
                 {states.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -269,8 +369,26 @@ export default function WhatIfSimulator() {
           <AzureTranslate text="What-If Simulator" /> 🔬
         </h1>
         <p className="font-label text-sm text-on-surface-variant/60 mt-1">
-          <AzureTranslate text="Test how changing soil, weather, or season affects crop recommendations" />
+          <AzureTranslate text="Test how changing soil, weather, or season affects crop recommendations & profit" />
         </p>
+      </div>
+
+      {/* District selector for profit analysis */}
+      <div className="bg-white rounded-2xl editorial-shadow p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+        <div className="flex-1 space-y-1 w-full sm:w-auto">
+          <label className="font-label text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-wider"><AzureTranslate text="District (for profit analysis)" /></label>
+          <select className={inputClass} value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)}>
+            {districts.length > 0 ? (
+              districts.map(d => <option key={d} value={d}>{d}</option>)
+            ) : (
+              <option value="">Select state first</option>
+            )}
+          </select>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-on-surface-variant/50">
+          <span className="material-symbols-outlined text-sm text-primary">info</span>
+          <AzureTranslate text={`Profit is calculated for ${AREA_HA} hectares using AI yield + market prices`} />
+        </div>
       </div>
 
       {/* Input Columns */}
@@ -317,6 +435,156 @@ export default function WhatIfSimulator() {
         </div>
       )}
 
+      {/* 💰 Profit Impact Card */}
+      {profitLoading && (
+        <div className="bg-white rounded-2xl editorial-shadow p-6 flex items-center justify-center gap-3 animate-fade-in">
+          <div className="spinner" style={{ width: 24, height: 24 }} />
+          <span className="font-label text-sm text-on-surface-variant"><AzureTranslate text="Calculating profit impact..." /></span>
+        </div>
+      )}
+
+      {profitData && !profitLoading && (
+        <div className="bg-white rounded-2xl editorial-shadow overflow-hidden animate-fade-in-up">
+          <div className="p-4 bg-gradient-to-r from-primary/5 to-tertiary/5 flex items-center justify-between">
+            <h3 className="font-headline font-bold text-on-surface flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">payments</span>
+              <AzureTranslate text="Profit Impact Analysis" /> 💰
+            </h3>
+            <span className="smart-chip bg-surface-container text-on-surface-variant">{AREA_HA} ha</span>
+          </div>
+
+          <div className="p-5">
+            {/* Side-by-side profit comparison */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              {/* Baseline */}
+              <div className="rounded-2xl p-4 bg-primary/5 ring-1 ring-primary/20">
+                <div className="font-label text-[10px] font-bold text-primary uppercase tracking-widest mb-2"><AzureTranslate text="Current" /></div>
+                <div className="font-headline font-extrabold text-lg capitalize text-on-surface">{profitData.baseline.crop}</div>
+                <div className="mt-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-on-surface-variant/60"><AzureTranslate text="Yield" /></span>
+                    <span className="font-bold">{profitData.baseline.yieldPerHa} T/ha</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-on-surface-variant/60"><AzureTranslate text="Price" /></span>
+                    <span className="font-bold">₹{profitData.baseline.pricePerQuintal.toLocaleString()}/Q</span>
+                  </div>
+                  <div className="h-px bg-surface-container-high" />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-on-surface-variant/60"><AzureTranslate text="Revenue" /></span>
+                    <span className="font-bold text-primary">{formatINR(profitData.baseline.revenue)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-on-surface-variant/60"><AzureTranslate text="Cost" /></span>
+                    <span className="font-bold text-error">{formatINR(profitData.baseline.totalCost)}</span>
+                  </div>
+                  <div className="h-px bg-surface-container-high" />
+                  <div className="flex justify-between text-sm">
+                    <span className="font-bold"><AzureTranslate text="Profit" /></span>
+                    <span className={`font-headline font-extrabold text-lg ${profitData.baseline.profit >= 0 ? 'text-primary' : 'text-error'}`}>
+                      {formatINR(profitData.baseline.profit)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* What-If */}
+              <div className="rounded-2xl p-4 bg-tertiary/5 ring-1 ring-tertiary/20">
+                <div className="font-label text-[10px] font-bold text-tertiary uppercase tracking-widest mb-2"><AzureTranslate text="What-If" /></div>
+                <div className="font-headline font-extrabold text-lg capitalize text-on-surface">{profitData.whatif.crop}</div>
+                <div className="mt-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-on-surface-variant/60"><AzureTranslate text="Yield" /></span>
+                    <span className="font-bold">{profitData.whatif.yieldPerHa} T/ha</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-on-surface-variant/60"><AzureTranslate text="Price" /></span>
+                    <span className="font-bold">₹{profitData.whatif.pricePerQuintal.toLocaleString()}/Q</span>
+                  </div>
+                  <div className="h-px bg-surface-container-high" />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-on-surface-variant/60"><AzureTranslate text="Revenue" /></span>
+                    <span className="font-bold text-primary">{formatINR(profitData.whatif.revenue)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-on-surface-variant/60"><AzureTranslate text="Cost" /></span>
+                    <span className="font-bold text-error">{formatINR(profitData.whatif.totalCost)}</span>
+                  </div>
+                  <div className="h-px bg-surface-container-high" />
+                  <div className="flex justify-between text-sm">
+                    <span className="font-bold"><AzureTranslate text="Profit" /></span>
+                    <span className={`font-headline font-extrabold text-lg ${profitData.whatif.profit >= 0 ? 'text-primary' : 'text-error'}`}>
+                      {formatINR(profitData.whatif.profit)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Delta Impact Banner */}
+            <div className={`rounded-2xl p-4 text-center ${
+              profitData.delta > 0 ? 'bg-gradient-to-r from-primary to-primary-container' :
+              profitData.delta < 0 ? 'bg-gradient-to-r from-error to-red-700' :
+              'bg-surface-container-low'
+            } ${profitData.delta !== 0 ? 'text-white' : 'text-on-surface'}`}>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="material-symbols-outlined text-xl">
+                  {profitData.delta > 0 ? 'trending_up' : profitData.delta < 0 ? 'trending_down' : 'drag_handle'}
+                </span>
+                <span className="font-headline font-extrabold text-2xl sm:text-3xl">
+                  {profitData.delta > 0 ? '+' : ''}{formatINR(profitData.delta)}
+                </span>
+              </div>
+              <p className="font-label text-sm opacity-80">
+                {profitData.delta > 0 ? (
+                  <AzureTranslate text={`More profit with What-If conditions (+${profitData.deltaPct}%)`} />
+                ) : profitData.delta < 0 ? (
+                  <AzureTranslate text={`Less profit with What-If conditions (${profitData.deltaPct}%)`} />
+                ) : (
+                  <AzureTranslate text="No difference in profit between scenarios" />
+                )}
+              </p>
+            </div>
+
+            {/* Visual bar comparison */}
+            <div className="mt-4 space-y-2">
+              {[
+                { label: 'Current', value: profitData.baseline.profit, color: 'from-primary to-primary-container' },
+                { label: 'What-If', value: profitData.whatif.profit, color: 'from-tertiary to-tertiary-container' },
+              ].map(bar => {
+                const maxVal = Math.max(Math.abs(profitData.baseline.profit), Math.abs(profitData.whatif.profit), 1)
+                const pct = (Math.abs(bar.value) / maxVal) * 100
+                return (
+                  <div key={bar.label} className="flex items-center gap-3">
+                    <span className="font-label text-xs w-16 text-on-surface-variant/60"><AzureTranslate text={bar.label} /></span>
+                    <div className="flex-1 h-6 bg-surface-container-low rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full bg-gradient-to-r ${bar.color} transition-all duration-700 flex items-center justify-end pr-2`}
+                        style={{ width: `${Math.max(pct, 5)}%` }}>
+                        <span className="text-white text-[10px] font-bold">{formatINR(bar.value)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="px-5 pb-4 font-label text-[10px] text-on-surface-variant/40">
+            <AzureTranslate text="* Estimates based on AI yield predictions and recent market prices. Actual results may vary." />
+          </div>
+        </div>
+      )}
+
+      {/* No district hint */}
+      {baseTop && whatifTop && !profitData && !profitLoading && !selectedDistrict && (
+        <div className="bg-surface-container-low rounded-2xl p-4 flex items-center gap-3 animate-fade-in">
+          <span className="material-symbols-outlined text-primary">info</span>
+          <p className="font-label text-sm text-on-surface-variant/70">
+            <AzureTranslate text="Select a district above to see profit impact analysis for both scenarios." />
+          </p>
+        </div>
+      )}
+
       {/* Result Cards */}
       {(baselineResult || whatifResult) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -335,7 +603,7 @@ export default function WhatIfSimulator() {
             <AzureTranslate text="Ready to Simulate" />
           </h3>
           <p className="text-sm text-on-surface-variant/60 max-w-sm">
-            <AzureTranslate text="Adjust the current and what-if parameters above, then click Run Simulation to compare outcomes side by side." />
+            <AzureTranslate text="Adjust the current and what-if parameters above, then click Run Simulation to compare outcomes side by side — including profit impact." />
           </p>
         </div>
       )}
