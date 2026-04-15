@@ -25,6 +25,8 @@ import SmartAlerts from './pages/SmartAlerts'
 import ProfitPlanner from './pages/ProfitPlanner'
 import FieldScanner from './pages/FieldScanner'
 import Weather from './pages/Weather'
+import Schemes from './pages/Schemes'
+import Loans from './pages/Loans'
 
 /* ─── Navigation Config ─────────────────────────────── */
 const NAV_ITEMS = [
@@ -43,6 +45,10 @@ const NAV_ITEMS = [
   { icon: 'science', label: 'What-If Sim', emoji: '🔬', path: '/simulator' },
   { icon: 'notifications_active', label: 'Smart Alerts', emoji: '🚨', path: '/smart-alerts' },
   { icon: 'payments', label: 'Profit Planner', emoji: '💰', path: '/profit-planner' },
+  // ── Farmer Support
+  { section: 'Farmer Support' },
+  { icon: 'account_balance', label: 'Schemes', emoji: '🏛️', path: '/schemes' },
+  { icon: 'savings', label: 'Loans', emoji: '🌾', path: '/loans' },
   // ── Social
   { section: 'Social' },
   { icon: 'groups', label: 'Community', emoji: '💬', path: '/community' },
@@ -75,6 +81,8 @@ const PAGE_TITLES = {
   '/smart-alerts': 'Smart Alerts',
   '/profit-planner': 'Profit Planner',
   '/field-scanner': 'Disease Scanner',
+  '/schemes': 'Government Schemes',
+  '/loans': 'Farmer Loans',
 }
 
 /* ─── Sidebar (Desktop) ─────────────────────────────── */
@@ -406,6 +414,8 @@ function AppLayout() {
             <Route path="/smart-alerts" element={<SmartAlerts />} />
             <Route path="/profit-planner" element={<ProfitPlanner />} />
             <Route path="/field-scanner" element={<FieldScanner />} />  {/* redirect alias */}
+            <Route path="/schemes" element={<Schemes />} />
+            <Route path="/loans" element={<Loans />} />
           </Routes>
         </div>
       </main>
