@@ -75,7 +75,6 @@ export default function Dashboard() {
           <p className="font-body text-emerald-100/80 mb-8 max-w-sm"><AzureTranslate text={`Optimal harvest window predicted in 14 days. Soil moisture levels are steady at ${weather?.current?.humidity || 68}%.`} /></p>
           <div className="flex gap-4">
             <Link to="/yield" className="bg-primary px-8 py-3 rounded-full font-bold text-white shadow-lg hover:scale-105 transition-transform text-center"><AzureTranslate text="View Report"/></Link>
-            <Link to="/fields" className="bg-white/10 backdrop-blur-md border border-white/20 px-8 py-3 rounded-full font-bold text-white hover:bg-white/20 transition-all text-center"><AzureTranslate text="Sensor Data"/></Link>
           </div>
         </div>
       </section>
