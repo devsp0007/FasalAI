@@ -3,7 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
 
 const LANGUAGE_NAMES = {
   en: 'English', hi: 'Hindi', ta: 'Tamil', te: 'Telugu', kn: 'Kannada',
